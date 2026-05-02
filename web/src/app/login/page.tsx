@@ -66,9 +66,9 @@ function LoginContent() {
       body: JSON.stringify({ token: data.access_token }),
     });
 
+    // window.location garante reload completo do Server Component (header)
     const redirect = searchParams.get("redirect");
-    router.push(redirect ?? "/");
-    router.refresh();
+    window.location.href = redirect ?? "/";
   }
 
   return (

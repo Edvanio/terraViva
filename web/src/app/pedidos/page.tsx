@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import useSWR from "swr";
 import type { Reservation } from "@/lib/types";
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
@@ -20,10 +21,32 @@ const fetcher = async (url: string): Promise<Reservation[]> => {
 };
 
 export default function PedidosPage() {
-  const { data, error, isLoading } = useSWR<Reservation[]>(
+  const { data, error, isLoading, mutate } = useSWR<Reservation[]>(
     `${process.env.NEXT_PUBLIC_API_URL}/reservations`,
     fetcher,
   );
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  async function handleCancel(orderId: string) {
+    if (!confirm("Cancelar esta reserva?")) return;
+    setCancellingId(orderId);
+    try {
+      const token = localStorage.getItem("terra_viva_token");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/reservations/${orderId}/cancel`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (!res.ok) throw new Error();
+      await mutate();
+    } catch {
+      alert("Não foi possível cancelar. Tente novamente.");
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   if (isLoading) return <p>Carregando pedidos...</p>;
   if (error) return <p>Erro ao carregar pedidos.</p>;
@@ -87,6 +110,17 @@ export default function PedidosPage() {
                   {order.producer_name || "Produtor"}
                 </span>
               </div>
+
+              {/* Cancelar (só pending) */}
+              {order.status === "pending" && (
+                <button
+                  onClick={() => handleCancel(order.id)}
+                  disabled={cancellingId === order.id}
+                  className="mt-2 text-xs text-red-500 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
+                >
+                  {cancellingId === order.id ? "Cancelando…" : "Cancelar reserva"}
+                </button>
+              )}
             </div>
           </div>
         </article>

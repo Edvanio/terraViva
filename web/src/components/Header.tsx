@@ -16,11 +16,18 @@ export async function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-sm">
-            <svg width="20" height="20" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M14 3C14 3 6 8 6 16a8 8 0 0016 0C22 8 14 3 14 3Z" fill="white" fillOpacity="0.95"/>
-              <path d="M14 10v12" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeOpacity="0.7"/>
-              <path d="M14 14c0 0-3-3-5-2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.6"/>
-              <path d="M14 17c0 0 2-2 4-2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.6"/>
+            {/* Ícone: broto/muda crescendo da terra */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              {/* Caule */}
+              <path d="M12 21V11" stroke="white" strokeWidth="1.9" strokeLinecap="round"/>
+              {/* Folha esquerda */}
+              <path d="M12 15C12 15 7.5 13.5 7 9C7 9 12 9.5 12 15Z" fill="white" fillOpacity="0.9"/>
+              {/* Folha direita */}
+              <path d="M12 11.5C12 11.5 16.5 9.5 17 5.5C17 5.5 12 6.5 12 11.5Z" fill="white" fillOpacity="0.75"/>
+              {/* Solo */}
+              <path d="M8 21Q12 19.5 16 21" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.5"/>
+              {/* Sol (pequeno círculo) */}
+              <circle cx="7.5" cy="6.5" r="1.6" fill="white" fillOpacity="0.6"/>
             </svg>
           </div>
           <div className="leading-tight">

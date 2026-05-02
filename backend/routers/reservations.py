@@ -152,3 +152,24 @@ def update_reservation_status(
     )
     updated = db.reservations.find_one({"_id": reservation["_id"]})
     return _to_response(updated)
+
+
+@router.patch("/{reservation_id}/cancel", response_model=ReservationResponse)
+def cancel_reservation(reservation_id: str, user: dict = Depends(get_current_user)):
+    """Consumidor cancela sua própria reserva (somente status pending)."""
+    db = get_db()
+    reservation = db.reservations.find_one({
+        "_id": ObjectId(reservation_id),
+        "consumer_id": user["_id"],
+    })
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reserva não encontrada")
+    if reservation["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Só é possível cancelar reservas pendentes")
+
+    db.reservations.update_one(
+        {"_id": reservation["_id"]},
+        {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}},
+    )
+    updated = db.reservations.find_one({"_id": reservation["_id"]})
+    return _to_response(updated)

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     sameSite: "lax",
     secure: false,
     path: "/",
-    maxAge: 60 * 30,
+    maxAge: 60 * 60 * 24 * 7, // 7 dias — igual ao JWT do backend
   });
   return NextResponse.json({ ok: true });
 }

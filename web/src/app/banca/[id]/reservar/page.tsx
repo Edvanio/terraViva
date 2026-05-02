@@ -61,6 +61,14 @@ export default function ReservarPage() {
         }),
       });
 
+      if (response.status === 401) {
+        // Token expirado — limpa e redireciona para login
+        localStorage.removeItem("terra_viva_token");
+        router.push(
+          `/login?redirect=/banca/${params.id}/reservar?productId=${productId}&name=${encodeURIComponent(productName)}&price=${productPrice}`
+        );
+        return;
+      }
       if (!response.ok) throw new Error("Falha ao criar reserva");
       setSuccess(true);
     } catch {
