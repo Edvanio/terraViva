@@ -1,0 +1,192 @@
+from datetime import datetime
+from typing import Literal, Optional
+
+from pydantic import BaseModel, Field
+
+
+class OtpRequest(BaseModel):
+    phone: str
+    role: Literal["consumer", "producer", "admin"] = "consumer"
+
+
+class OtpVerify(BaseModel):
+    phone: str
+    code: str = Field(min_length=6, max_length=6)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    id: str
+    phone: str
+    role: Literal["consumer", "producer", "admin"]
+    name: Optional[str] = None
+    created_at: datetime
+
+
+class BancaResponse(BaseModel):
+    id: str
+    user_id: str
+    bio: str
+    city: str
+    payment_methods: list[str]
+    photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    categories: list[str] = []
+
+
+class BancaDetailResponse(BancaResponse):
+    gallery: list[str] = []
+    address: Optional[str] = None
+    pix_key: Optional[str] = None
+
+
+class ProductCreate(BaseModel):
+    name: str
+    price: float = Field(gt=0)
+    description: Optional[str] = None
+    photo_url: Optional[str] = None
+    category: Optional[str] = None
+    is_active: bool = True
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    price: Optional[float] = Field(default=None, gt=0)
+    description: Optional[str] = None
+    photo_url: Optional[str] = None
+    category: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ProductResponse(BaseModel):
+    id: str
+    producer_id: str
+    name: str
+    price: float
+    description: Optional[str] = None
+    photo_url: Optional[str] = None
+    category: Optional[str] = None
+    is_active: bool = True
+
+
+class ReservationCreate(BaseModel):
+    product_id: str
+    quantity: int = Field(ge=1)
+    pickup_location: Literal["feira", "produtor"]
+    payment_intent: Literal["cash", "pix", "card"]
+
+
+class ReservationStatusUpdate(BaseModel):
+    status: Literal["pending", "confirmed", "collected", "cancelled"]
+
+
+class ReservationResponse(BaseModel):
+    id: str
+    consumer_id: str
+    producer_id: str
+    product_id: str
+    product_name: str
+    product_photo_url: Optional[str] = None
+    product_description: Optional[str] = None
+    product_category: Optional[str] = None
+    consumer_name: Optional[str] = None
+    consumer_phone: Optional[str] = None
+    producer_name: Optional[str] = None
+    producer_photo_url: Optional[str] = None
+    quantity: int
+    total_price: float
+    pickup_location: Literal["feira", "produtor"]
+    payment_intent: Literal["cash", "pix", "card"]
+    status: Literal["pending", "confirmed", "collected", "cancelled"]
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProducerProfileCreate(BaseModel):
+    bio: str = ""
+    city: str
+    phone: str = ""
+    payment_methods: list[Literal["cash", "pix", "card"]] = ["cash"]
+    photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: list[str] = []
+    pix_key: Optional[str] = None
+    address: Optional[str] = None
+    expo_push_token: Optional[str] = None
+
+
+class ProducerProfileUpdate(BaseModel):
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    phone: Optional[str] = None
+    payment_methods: Optional[list[Literal["cash", "pix", "card"]]] = None
+    photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: Optional[list[str]] = None
+    pix_key: Optional[str] = None
+    address: Optional[str] = None
+    expo_push_token: Optional[str] = None
+
+
+class ProducerProfileResponse(BaseModel):
+    id: str
+    user_id: str
+    bio: str
+    city: str
+    phone: str
+    payment_methods: list[str]
+    photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: list[str] = []
+    pix_key: Optional[str] = None
+    address: Optional[str] = None
+
+
+class FairConfigCreate(BaseModel):
+    name: str
+    city: str
+    logo_url: Optional[str] = None
+    primary_color: str = "#2A5C2E"
+    secondary_color: str = "#F7F3EC"
+    fair_day: str
+    fair_start_time: str
+    fair_end_time: str
+    fair_location: str
+    order_window_open: str
+    order_window_close: str
+    active: bool = True
+
+
+class FairConfigUpdate(BaseModel):
+    name: Optional[str] = None
+    city: Optional[str] = None
+    logo_url: Optional[str] = None
+    primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+    fair_day: Optional[str] = None
+    fair_start_time: Optional[str] = None
+    fair_end_time: Optional[str] = None
+    fair_location: Optional[str] = None
+    order_window_open: Optional[str] = None
+    order_window_close: Optional[str] = None
+    active: Optional[bool] = None
+
+
+class FairConfigResponse(BaseModel):
+    id: str
+    name: str
+    city: str
+    logo_url: Optional[str] = None
+    primary_color: str
+    secondary_color: str
+    fair_day: str
+    fair_start_time: str
+    fair_end_time: str
+    fair_location: str
+    order_window_open: str
+    order_window_close: str
+    active: bool

@@ -1,0 +1,12 @@
+.github/agents/
+.github/prompts/
+.github/AGENTS.md
+
+# Node modules
+**/node_modules
+
+# Secrets de produção
+.env
+.env.production
+backend/.env
+web/.env

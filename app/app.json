@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Terra Viva",
+    "slug": "terra-viva",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F3EC"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F7F3EC"
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2A5C2E",
+          "sounds": []
+        }
+      ]
+    ]
+  }
+}

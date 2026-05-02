@@ -1,0 +1,25 @@
+# ──────────────────────────────────────────────────────────────────
+# Deploy no DigitalOcean Droplet
+#
+# Pré-requisitos no Droplet:
+#   sudo apt install docker.io docker-compose-plugin -y
+#   sudo usermod -aG docker $USER
+#
+# Uso:
+#   1. Copie este arquivo e o .env.production para o Droplet
+#   2. docker compose -f docker-compose.digitalocean.yml up -d
+# ──────────────────────────────────────────────────────────────────
+services:
+  terra-viva:
+    image: edvanio/terra-viva:latest
+    container_name: terra-viva
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    env_file:
+      - .env.production
+    volumes:
+      - uploads_data:/app/backend/uploads
+
+volumes:
+  uploads_data:

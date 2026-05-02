@@ -1,0 +1,76 @@
+name: terra-viva
+region: nyc
+
+services:
+  - name: app
+    # Constrói a partir do Dockerfile.unified na raiz do repositório
+    dockerfile_path: Dockerfile.unified
+    github:
+      branch: main
+      deploy_on_push: true
+    http_port: 80
+    instance_count: 1
+    instance_size_slug: basic-xxs   # $12/mês — ajuste conforme necessidade
+
+    envs:
+      # ── MongoDB ─────────────────────────────────────────────────
+      - key: MONGODB_URL
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: MONGODB_DB_NAME
+        scope: RUN_TIME
+        value: terra_viva
+
+      # ── JWT ──────────────────────────────────────────────────────
+      - key: SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: ALGORITHM
+        scope: RUN_TIME
+        value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        scope: RUN_TIME
+        value: "10080"
+
+      # ── CORS (adicione o domínio do app após o deploy) ───────────
+      - key: CORS_ORIGINS
+        scope: RUN_TIME
+        value: "http://localhost,http://localhost:3000"
+
+      # ── OTP padrão (remova em produção real) ─────────────────────
+      - key: DEV_OTP_DEFAULT
+        scope: RUN_TIME
+        value: "123456"
+
+      # ── DigitalOcean Spaces ──────────────────────────────────────
+      - key: DO_SPACES_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: DO_SPACES_SECRET
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: DO_SPACES_ENDPOINT
+        scope: RUN_TIME
+        value: https://nyc3.digitaloceanspaces.com
+
+      - key: DO_SPACES_REGION
+        scope: RUN_TIME
+        value: us-east-1
+
+      - key: DO_SPACES_BUCKET
+        scope: RUN_TIME
+        value: dadosbimdoctor
+
+      - key: DO_SPACES_FOLDER
+        scope: RUN_TIME
+        value: terraviva/profiles
+
+      # ── Next.js URL interna (mesmo container via nginx) ──────────
+      - key: API_INTERNAL_URL
+        scope: RUN_TIME
+        value: http://127.0.0.1:8000

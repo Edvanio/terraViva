@@ -1,0 +1,43 @@
+# Dependências e builds locais
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.mypy_cache
+
+# Arquivos de ambiente (nunca enviar secrets para a imagem)
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+
+# App mobile (não faz parte do container)
+app/
+
+# Docs
+docs/
+
+# Ferramentas de CI/scripts
+spec_to_code/
+UpdateSubmodulo.bat
+Makefile
+
+# Git
+.git
+.gitignore
+.gitmodules
+
+# Docker compose de desenvolvimento
+docker-compose.yml
+docker-compose.prod.yml
+
+# Uploads locais
+backend/uploads/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
