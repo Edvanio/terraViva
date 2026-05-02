@@ -37,6 +37,7 @@ interface Product {
   color_primary?: string | null;
   color_accent?: string | null;
   is_active: boolean;
+  stock?: number | null;
 }
 
 function getToken(): string | null {
@@ -152,6 +153,16 @@ export default function MinhaBancaPage() {
       body: JSON.stringify({ is_active: !isActive }),
     });
     toast(isActive ? "Produto marcado como esgotado." : "Produto disponível! ✅");
+    await loadData();
+  }
+
+  async function updateStock(productId: string, newStock: number) {
+    const token = getToken();
+    await fetch(`${base}/products/${productId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ stock: Math.max(0, newStock) }),
+    });
     await loadData();
   }
 
@@ -331,12 +342,24 @@ export default function MinhaBancaPage() {
                     {/* Tags */}
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       <span className="rounded-full bg-background px-2 py-0.5 text-xs text-textSecondary">
-                        📍 {PICKUP_LABEL[order.pickup_location] ?? order.pickup_location}
+                        {PICKUP_LABEL[order.pickup_location] ?? order.pickup_location}
                       </span>
                       <span className="rounded-full bg-background px-2 py-0.5 text-xs text-textSecondary">
                         💳 {PAYMENT_LABEL[order.payment_intent] ?? order.payment_intent}
                       </span>
                     </div>
+
+                    {/* WhatsApp do consumidor */}
+                    {order.consumer_phone && (
+                      <a
+                        href={`https://wa.me/55${order.consumer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Oi! Sou o produtor do Terra Viva. Sobre seu pedido de ${order.quantity}x ${order.product_name} — `)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700"
+                      >
+                        💬 Falar no WhatsApp
+                      </a>
+                    )}
                   </div>
                 </div>
 
@@ -478,46 +501,71 @@ export default function MinhaBancaPage() {
               <p className="text-textSecondary">Nenhum produto cadastrado ainda.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {products.map((product) => (
-                <article key={product.id} className="flex items-center gap-4 rounded-xl bg-surface px-4 py-3 shadow-card">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary-subtle text-2xl">
-                    {product.photo_url ? (
-                      <Image src={product.photo_url} alt={product.name} width={48} height={48} unoptimized className="h-full w-full object-cover" />
-                    ) : (
-                      <span>{CATEGORIES.find((c) => c.value === product.category)?.icon ?? "🧀"}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-semibold text-textPrimary">{product.name}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-primary">
+                <article key={product.id} className="rounded-2xl bg-surface p-4 shadow-card">
+                  {/* Linha 1: Foto + Info */}
+                  <div className="flex gap-3">
+                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary-subtle text-3xl">
+                      {product.photo_url ? (
+                        <Image src={product.photo_url} alt={product.name} width={64} height={64} unoptimized className="h-full w-full object-cover" />
+                      ) : (
+                        <span>{CATEGORIES.find((c) => c.value === product.category)?.icon ?? "🧀"}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-base font-bold text-textPrimary">{product.name}</p>
+                      <p className="text-lg font-bold text-primary">
                         R$ {product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </span>
+                      </p>
                       {product.category && (
-                        <span className="rounded-full bg-background px-2 py-0.5 text-[11px] text-textSecondary">
+                        <span className="text-xs text-textSecondary">
                           {CATEGORIES.find((c) => c.value === product.category)?.icon} {CATEGORIES.find((c) => c.value === product.category)?.label}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  {/* Linha 2: Estoque */}
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-background px-3 py-2">
+                    <span className="text-sm font-medium text-textSecondary">📦 Estoque disponível</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateStock(product.id, (product.stock ?? 0) - 1)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-border text-lg font-bold text-textPrimary hover:bg-primary/20 active:scale-95"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2rem] text-center text-lg font-bold text-textPrimary">
+                        {product.stock ?? 0}
+                      </span>
+                      <button
+                        onClick={() => updateStock(product.id, (product.stock ?? 0) + 1)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-lg font-bold text-primary hover:bg-primary/30 active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Linha 3: Ações */}
+                  <div className="mt-3 flex items-center gap-2">
                     <button
                       onClick={() => toggleProduct(product.id, product.is_active)}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition ${
                         product.is_active
-                          ? "bg-primary-subtle text-primary"
-                          : "bg-border text-textSecondary"
+                          ? "bg-primary text-white"
+                          : "bg-red-100 text-red-700 border border-red-200"
                       }`}
                     >
-                      {product.is_active ? "✅ Disponível" : "Esgotado"}
+                      {product.is_active ? "✅ Disponível" : "❌ Esgotado"}
                     </button>
                     <button
                       onClick={() => setConfirmDelete({ id: product.id, name: product.name })}
-                      className="text-textSecondary transition hover:text-red-600"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-lg text-red-500 transition hover:bg-red-100 hover:text-red-700"
                       title="Remover produto"
                     >
-                      🗑
+                      🗑️
                     </button>
                   </div>
                 </article>

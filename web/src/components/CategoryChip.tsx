@@ -31,14 +31,14 @@ export function CategoryChip({ label, icon, active = false, onClick }: Props) {
       type="button"
       onClick={onClick}
       className={
-        `inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+        `inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
           active
-            ? "border-primary bg-primary text-white shadow-sm scale-[1.02]"
+            ? "border-primary bg-primary text-white shadow-sm"
             : "border-border bg-surface text-textSecondary hover:border-primary hover:text-primary hover:bg-primary-subtle"
         }`
       }
     >
-      {icon && <span className="text-base">{icon}</span>}
+      {icon && <span className="text-sm">{icon}</span>}
       {label}
     </button>
   );

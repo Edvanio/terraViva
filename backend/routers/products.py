@@ -41,6 +41,7 @@ def list_mine(user: dict = Depends(get_current_user)):
             color_primary=p.get("color_primary"),
             color_accent=p.get("color_accent"),
             is_active=p.get("is_active", True),
+            stock=p.get("stock"),
         )
         for p in items
     ]
@@ -71,6 +72,7 @@ def create_product(payload: ProductCreate, user: dict = Depends(get_current_user
         color_primary=created.get("color_primary"),
         color_accent=created.get("color_accent"),
         is_active=created.get("is_active", True),
+        stock=created.get("stock"),
     )
 
 
@@ -102,6 +104,7 @@ def update_product(product_id: str, payload: ProductUpdate, user: dict = Depends
         color_primary=updated.get("color_primary"),
         color_accent=updated.get("color_accent"),
         is_active=updated.get("is_active", True),
+        stock=updated.get("stock"),
     )
 
 

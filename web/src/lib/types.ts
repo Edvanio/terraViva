@@ -54,6 +54,7 @@ export interface Reservation {
   consumer_name?: string | null;
   consumer_phone?: string | null;
   producer_name?: string | null;
+  producer_phone?: string | null;
   producer_photo_url?: string | null;
   quantity: number;
   total_price: number;

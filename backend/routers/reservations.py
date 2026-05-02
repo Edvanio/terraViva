@@ -18,6 +18,7 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
     consumer_name = None
     consumer_phone = None
     producer_name = None
+    producer_phone = None
     producer_photo_url = None
 
     if db is None:
@@ -50,6 +51,7 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
     if producer:
         producer_user = db.users.find_one({"_id": producer.get("user_id")})
         producer_name = (producer_user.get("name") if producer_user else None) or producer.get("city", "")
+        producer_phone = producer_user.get("phone") if producer_user else None
         producer_photo_url = producer.get("photo_url")
 
     return ReservationResponse(
@@ -64,6 +66,7 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
         consumer_name=consumer_name,
         consumer_phone=consumer_phone,
         producer_name=producer_name,
+        producer_phone=producer_phone,
         producer_photo_url=producer_photo_url,
         quantity=document["quantity"],
         total_price=document["total_price"],
