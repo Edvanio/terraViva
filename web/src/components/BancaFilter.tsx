@@ -39,7 +39,7 @@ export function BancaFilter({ bancas }: Props) {
 
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-bold text-textPrimary">
-          {active ? CATEGORIES.find((c) => c.value === active)?.label : "Todas as Bancas"}
+          {active ? CATEGORIES.find((c) => c.value === active)?.label : "Todos os Produtores"}
         </h2>
         <span className="text-sm text-textSecondary">
           {filtered.length} produtor{filtered.length !== 1 ? "es" : ""}

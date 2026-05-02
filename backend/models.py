@@ -50,6 +50,8 @@ class ProductCreate(BaseModel):
     description: Optional[str] = None
     photo_url: Optional[str] = None
     category: Optional[str] = None
+    color_primary: Optional[str] = None
+    color_accent: Optional[str] = None
     is_active: bool = True
 
 
@@ -59,6 +61,8 @@ class ProductUpdate(BaseModel):
     description: Optional[str] = None
     photo_url: Optional[str] = None
     category: Optional[str] = None
+    color_primary: Optional[str] = None
+    color_accent: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -70,7 +74,26 @@ class ProductResponse(BaseModel):
     description: Optional[str] = None
     photo_url: Optional[str] = None
     category: Optional[str] = None
+    color_primary: Optional[str] = None
+    color_accent: Optional[str] = None
     is_active: bool = True
+
+
+class AIProductGenerateRequest(BaseModel):
+    photo_url: str
+    city: Optional[str] = None
+
+
+class AIProductGenerateResponse(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    color_primary: Optional[str] = None
+    color_accent: Optional[str] = None
+    suggested_price: Optional[float] = None
+    suggested_price_note: Optional[str] = None
+    original_photo_url: str
+    enhanced_photo_url: Optional[str] = None
 
 
 class ReservationCreate(BaseModel):

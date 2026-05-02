@@ -29,3 +29,14 @@ export function parsePrice(value: string): number {
 export function formatPrice(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+export function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  if (!/^[0-9A-Fa-f]{6}$/.test(normalized)) {
+    return `rgba(42, 92, 46, ${alpha})`;
+  }
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(1, alpha))})`;
+}

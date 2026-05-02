@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +9,17 @@ from dependencies import get_current_user
 from models import ProductCreate, ProductResponse, ProductUpdate
 
 router = APIRouter()
+
+HEX_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def _validate_colors(data: dict):
+    for key in ("color_primary", "color_accent"):
+        value = data.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not HEX_PATTERN.match(value.strip()):
+            raise HTTPException(status_code=422, detail=f"{key} invalido")
 
 
 @router.get("/mine", response_model=list[ProductResponse])
@@ -26,6 +38,8 @@ def list_mine(user: dict = Depends(get_current_user)):
             description=p.get("description"),
             photo_url=p.get("photo_url"),
             category=p.get("category"),
+            color_primary=p.get("color_primary"),
+            color_accent=p.get("color_accent"),
             is_active=p.get("is_active", True),
         )
         for p in items
@@ -40,6 +54,7 @@ def create_product(payload: ProductCreate, user: dict = Depends(get_current_user
         raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
 
     document = payload.model_dump()
+    _validate_colors(document)
     document["producer_id"] = producer["_id"]
     document["created_at"] = datetime.now(timezone.utc)
     result = db.products.insert_one(document)
@@ -53,6 +68,8 @@ def create_product(payload: ProductCreate, user: dict = Depends(get_current_user
         description=created.get("description"),
         photo_url=created.get("photo_url"),
         category=created.get("category"),
+        color_primary=created.get("color_primary"),
+        color_accent=created.get("color_accent"),
         is_active=created.get("is_active", True),
     )
 
@@ -70,6 +87,7 @@ def update_product(product_id: str, payload: ProductUpdate, user: dict = Depends
 
     data = {k: v for k, v in payload.model_dump().items() if v is not None}
     if data:
+        _validate_colors(data)
         db.products.update_one({"_id": product["_id"]}, {"$set": data})
 
     updated = db.products.find_one({"_id": product["_id"]})
@@ -81,6 +99,8 @@ def update_product(product_id: str, payload: ProductUpdate, user: dict = Depends
         description=updated.get("description"),
         photo_url=updated.get("photo_url"),
         category=updated.get("category"),
+        color_primary=updated.get("color_primary"),
+        color_accent=updated.get("color_accent"),
         is_active=updated.get("is_active", True),
     )
 

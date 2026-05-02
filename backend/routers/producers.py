@@ -1,9 +1,11 @@
 import uuid
+import json
 from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from openai import AsyncOpenAI
 
 from config import get_settings
 from database import get_db
@@ -14,6 +16,10 @@ ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE_MB = 5
 
 router = APIRouter()
+
+
+def _normalize_city(city: str | None) -> str:
+    return (city or "").strip()
 
 
 def _get_s3_client():
@@ -79,6 +85,8 @@ def create_profile(payload: ProducerProfileCreate, user: dict = Depends(get_curr
     existing = db.producers.find_one({"user_id": user["_id"]})
     if existing:
         raise HTTPException(status_code=409, detail="Perfil ja existe")
+    if not _normalize_city(payload.city):
+        raise HTTPException(status_code=422, detail="Cidade e obrigatoria")
 
     document = payload.model_dump()
     document["user_id"] = user["_id"]
@@ -95,12 +103,53 @@ def update_profile(payload: ProducerProfileUpdate, user: dict = Depends(get_curr
     if not producer:
         raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
 
+    if payload.city is not None and not _normalize_city(payload.city):
+        raise HTTPException(status_code=422, detail="Cidade e obrigatoria")
+
     data = {k: v for k, v in payload.model_dump().items() if v is not None}
     if data:
         db.producers.update_one({"_id": producer["_id"]}, {"$set": data})
 
     updated = db.producers.find_one({"_id": producer["_id"]})
     return _to_response(updated)
+
+
+@router.post("/geocode")
+async def geocode_address(payload: dict, user: dict = Depends(get_current_user)):
+    _ = user
+    address = (payload or {}).get("address", "")
+    if not isinstance(address, str) or not address.strip():
+        raise HTTPException(status_code=422, detail="address e obrigatorio")
+
+    settings = get_settings()
+    if not settings.openai_api_key:
+        return {"city": None, "state": None}
+
+    try:
+        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": "Retorne apenas JSON valido."},
+                {
+                    "role": "user",
+                    "content": (
+                        "Extraia cidade e estado brasileiros a partir do endereco abaixo. "
+                        "Retorne JSON com city e state (UF quando possivel). "
+                        f"Endereco: {address.strip()}"
+                    ),
+                },
+            ],
+            temperature=0,
+        )
+        content = response.choices[0].message.content or "{}"
+        data = json.loads(content)
+        city = (data.get("city") or "").strip() or None
+        state = (data.get("state") or "").strip() or None
+        return {"city": city, "state": state}
+    except Exception:
+        return {"city": None, "state": None}
 
 
 @router.post("/upload")

@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     do_spaces_region: str = "nyc3"
     do_spaces_bucket: str = "terraviva"
     do_spaces_folder: str = "terraviva/profiles"
+    do_spaces_products_folder: str = "terraviva/products"
+
+    # OpenAI
+    openai_api_key: str = ""
+    openai_vision_model: str = "gpt-4o"
+    openai_image_model: str = "dall-e-2"
 
     @property
     def cors_origins_list(self) -> list[str]:

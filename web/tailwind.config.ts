@@ -5,26 +5,37 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "Inter", "system-ui", "sans-serif"],
-        display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        sans: ["Nunito", "Inter", "system-ui", "sans-serif"],
+        display: ["Lora", "Georgia", "serif"],
       },
       colors: {
         primary: {
-          DEFAULT: "#16A34A",
-          dark: "#14532D",
-          medium: "#15803D",
-          light: "#86EFAC",
-          subtle: "#DCFCE7",
+          DEFAULT: "#2D6A4F",
+          dark: "#1B4332",
+          medium: "#40916C",
+          light: "#95D5B2",
+          subtle: "#D8F3DC",
+        },
+        accent: {
+          DEFAULT: "#E07A3A",
+          dark: "#C45E24",
+          light: "#FDDCBA",
+        },
+        earth: {
+          DEFAULT: "#8B5E3C",
+          light: "#C9A87C",
+          subtle: "#F5E6D3",
         },
         amber: {
           DEFAULT: "#D97706",
           light: "#FEF3C7",
         },
-        background: "#F4F7F5",
+        leaf: "#A3B18A",
+        background: "#FAF6F0",
         surface: "#FFFFFF",
-        textPrimary: "#111827",
-        textSecondary: "#6B7280",
-        border: "#E5E7EB",
+        textPrimary: "#1A1A1A",
+        textSecondary: "#5C5044",
+        border: "#E8DFD4",
       },
       borderRadius: {
         sm: "8px",
@@ -35,9 +46,10 @@ const config: Config = {
         "3xl": "32px",
       },
       boxShadow: {
-        card: "0 1px 3px 0 rgba(0,0,0,0.07), 0 1px 2px -1px rgba(0,0,0,0.07)",
-        "card-hover": "0 10px 25px -3px rgba(0,0,0,0.12), 0 4px 10px -4px rgba(0,0,0,0.08)",
-        header: "0 1px 0 0 rgba(0,0,0,0.06)",
+        card: "0 2px 8px 0 rgba(45,30,15,0.06), 0 1px 2px -1px rgba(45,30,15,0.04)",
+        "card-hover": "0 12px 28px -4px rgba(45,30,15,0.12), 0 4px 10px -4px rgba(45,30,15,0.06)",
+        header: "0 1px 0 0 rgba(45,30,15,0.05)",
+        tab: "0 -2px 12px 0 rgba(45,30,15,0.08)",
       },
       keyframes: {
         "fade-in": {

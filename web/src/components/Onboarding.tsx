@@ -5,19 +5,22 @@ import { Button } from "@/components/ui/Button";
 
 const SLIDES = [
   {
-    emoji: "🌿",
+    emoji: "�",
     title: "Bem-vindo ao Terra Viva",
-    desc: "A feira digital da colônia.\nCompre direto do produtor, sem intermediário.",
+    desc: "Compre direto de quem produz.\nFresquinho, sem intermediário, do jeito da colônia.",
+    bg: "from-primary/10 to-earth-subtle",
   },
   {
-    emoji: "🛒",
-    title: "Como comprar",
-    desc: "Escolha uma banca, reserve o produto e retire na feira de sábado.",
+    emoji: "🧺",
+    title: "Como funciona",
+    desc: "Escolha o produtor, peça o que quiser.\nRetire na feira, busque na propriedade\nou receba em casa!",
+    bg: "from-accent-light to-primary-subtle",
   },
   {
     emoji: "🌽",
-    title: "Como vender",
-    desc: "Cadastre seus produtos e receba pedidos no celular — bem simples.",
+    title: "Quer vender?",
+    desc: "Tire a foto do produto e a IA faz o resto.\nReceba pedidos no celular — bem fácil!",
+    bg: "from-primary-subtle to-earth-subtle",
   },
 ];
 
@@ -44,10 +47,10 @@ export function Onboarding() {
   const s = SLIDES[slide];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-surface px-8 py-10 shadow-card text-center space-y-5">
-        <span className="text-6xl block">{s.emoji}</span>
-        <h2 className="text-2xl font-bold text-textPrimary">{s.title}</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
+      <div className={`w-full max-w-sm rounded-3xl bg-gradient-to-br ${s.bg} px-8 py-10 shadow-card-hover text-center space-y-5 border border-border`}>
+        <span className="text-7xl block drop-shadow-sm">{s.emoji}</span>
+        <h2 className="font-display text-2xl font-bold text-textPrimary">{s.title}</h2>
         <p className="text-base text-textSecondary whitespace-pre-line leading-relaxed">{s.desc}</p>
 
         {/* Dots */}
@@ -56,19 +59,19 @@ export function Onboarding() {
             <span
               key={i}
               className={`block rounded-full transition-all ${
-                i === slide ? "w-6 h-2 bg-primary" : "w-2 h-2 bg-border"
+                i === slide ? "w-7 h-2.5 bg-primary" : "w-2.5 h-2.5 bg-border"
               }`}
             />
           ))}
         </div>
 
-        <Button size="lg" className="w-full" onClick={next}>
+        <Button size="lg" className="w-full rounded-2xl text-base" onClick={next}>
           {slide < SLIDES.length - 1 ? "Próximo →" : "Começar 🌿"}
         </Button>
 
         {slide > 0 && (
           <button
-            className="text-sm text-textSecondary hover:text-textPrimary"
+            className="text-sm font-medium text-textSecondary hover:text-textPrimary"
             onClick={() => setSlide(slide - 1)}
           >
             ← Voltar

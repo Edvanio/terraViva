@@ -7,6 +7,7 @@
 
 # Secrets de produção
 .env
+.envdev
 .env.develop
 .env.production
 backend/.env

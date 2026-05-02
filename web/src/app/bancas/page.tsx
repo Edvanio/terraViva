@@ -8,8 +8,8 @@ export default async function BancasPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-textPrimary">Bancas da Feira</h1>
-        <p className="mt-1 text-sm text-textSecondary">Escolha uma banca e faça sua reserva</p>
+        <h1 className="font-display text-2xl font-bold text-textPrimary">Nossos Produtores</h1>
+        <p className="mt-1 text-sm text-textSecondary">Escolha um produtor e peça o que precisar</p>
       </div>
 
       <BancaFilter bancas={bancas} />
