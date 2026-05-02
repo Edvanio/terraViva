@@ -191,9 +191,9 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
         )}
 
         {phase === "loading" && (
-          <div className="rounded-2xl bg-zinc-900 p-5">
-            <h3 className="mb-2 text-lg font-bold text-white">IA montando seu produto</h3>
-            <p className="mb-4 text-sm text-white/70">Estamos analisando sua foto e preparando seu anuncio.</p>
+          <div className="rounded-2xl bg-surface border border-border p-5">
+            <h3 className="mb-1 text-lg font-bold text-primary">🌱 IA montando seu produto</h3>
+            <p className="mb-4 text-sm text-textSecondary">Estamos analisando sua foto e preparando seu anúncio.</p>
             <AIProductSteps stepIndex={stepIndex} />
           </div>
         )}

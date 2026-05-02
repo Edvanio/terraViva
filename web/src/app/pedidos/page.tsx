@@ -111,16 +111,28 @@ export default function PedidosPage() {
                 </span>
               </div>
 
-              {/* Cancelar (só pending) */}
-              {order.status === "pending" && (
-                <button
-                  onClick={() => handleCancel(order.id)}
-                  disabled={cancellingId === order.id}
-                  className="mt-2 text-xs text-red-500 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
-                >
-                  {cancellingId === order.id ? "Cancelando…" : "Cancelar pedido"}
-                </button>
-              )}
+              {/* Ações */}
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {order.producer_phone && (
+                  <a
+                    href={`https://wa.me/55${order.producer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Oi! Fiz um pedido de ${order.quantity}x ${order.product_name} (R$ ${order.total_price.toFixed(2)}) pelo Terra Viva. Podemos combinar?`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700"
+                  >
+                    💬 Falar no WhatsApp
+                  </a>
+                )}
+                {order.status === "pending" && (
+                  <button
+                    onClick={() => handleCancel(order.id)}
+                    disabled={cancellingId === order.id}
+                    className="text-xs text-red-500 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
+                  >
+                    {cancellingId === order.id ? "Cancelando…" : "Cancelar pedido"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </article>

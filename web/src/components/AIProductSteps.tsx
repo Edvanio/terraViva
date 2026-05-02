@@ -12,25 +12,27 @@ const STEPS = [
 
 export function AIProductSteps({ stepIndex }: { stepIndex: number }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {STEPS.map((step, index) => {
         const done = index < stepIndex;
         const running = index === stepIndex;
         return (
           <div
             key={step.label}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 transition ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition ${
               done
-                ? "bg-primary/10"
+                ? "bg-primary/10 border border-primary/20"
                 : running
-                  ? "bg-primary/15"
-                  : "bg-white/10"
+                  ? "bg-accent/10 border border-accent/30"
+                  : "bg-background border border-border"
             }`}
           >
             <span className={`text-lg ${running ? "animate-pulse" : ""}`}>
               {done ? "✅" : running ? "⚡" : step.icon}
             </span>
-            <span className={`text-sm ${done || running ? "text-white" : "text-white/70"}`}>
+            <span className={`text-sm font-medium ${
+              done ? "text-primary" : running ? "text-accent" : "text-textSecondary"
+            }`}>
               {step.label}
             </span>
           </div>

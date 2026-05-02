@@ -53,6 +53,7 @@ class ProductCreate(BaseModel):
     color_primary: Optional[str] = None
     color_accent: Optional[str] = None
     is_active: bool = True
+    stock: Optional[int] = None
 
 
 class ProductUpdate(BaseModel):
@@ -64,6 +65,7 @@ class ProductUpdate(BaseModel):
     color_primary: Optional[str] = None
     color_accent: Optional[str] = None
     is_active: Optional[bool] = None
+    stock: Optional[int] = None
 
 
 class ProductResponse(BaseModel):
@@ -77,6 +79,7 @@ class ProductResponse(BaseModel):
     color_primary: Optional[str] = None
     color_accent: Optional[str] = None
     is_active: bool = True
+    stock: Optional[int] = None
 
 
 class AIProductGenerateRequest(BaseModel):
@@ -99,7 +102,7 @@ class AIProductGenerateResponse(BaseModel):
 class ReservationCreate(BaseModel):
     product_id: str
     quantity: int = Field(ge=1)
-    pickup_location: Literal["feira", "produtor"]
+    pickup_location: Literal["feira", "produtor", "entrega"]
     payment_intent: Literal["cash", "pix", "card"]
 
 
@@ -119,10 +122,11 @@ class ReservationResponse(BaseModel):
     consumer_name: Optional[str] = None
     consumer_phone: Optional[str] = None
     producer_name: Optional[str] = None
+    producer_phone: Optional[str] = None
     producer_photo_url: Optional[str] = None
     quantity: int
     total_price: float
-    pickup_location: Literal["feira", "produtor"]
+    pickup_location: Literal["feira", "produtor", "entrega"]
     payment_intent: Literal["cash", "pix", "card"]
     status: Literal["pending", "confirmed", "collected", "cancelled"]
     created_at: datetime
