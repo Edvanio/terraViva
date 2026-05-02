@@ -1,24 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Lora:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #F4F7F5;
+  --background: #FAF6F0;
   --surface: #ffffff;
-  --primary: #16A34A;
-  --primary-medium: #15803D;
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  --border: #E5E7EB;
+  --primary: #2D6A4F;
+  --primary-medium: #40916C;
+  --accent: #E07A3A;
+  --earth: #8B5E3C;
+  --text-primary: #1A1A1A;
+  --text-secondary: #5C5044;
+  --border: #E8DFD4;
 }
 
 body {
   margin: 0;
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  font-family: 'Nunito', 'Inter', system-ui, sans-serif;
+  font-size: 16px;
   color: var(--text-primary);
   background-color: var(--background);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a3b18a' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -30,4 +34,19 @@ a {
 
 * {
   box-sizing: border-box;
+}
+
+/* Scrollbar suave para mobile */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+/* Bottom tab bar spacer */
+.pb-tab-safe {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
 }

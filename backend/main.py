@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from database import get_db
-from routers import auth, bancas, fair_config, producers, products, reservations
+from routers import ai_products, auth, bancas, fair_config, producers, products, reservations
 
 settings = get_settings()
 
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(bancas.router, prefix="/bancas", tags=["bancas"])
 app.include_router(products.router, prefix="/products", tags=["products"])
+app.include_router(ai_products.router, prefix="/products", tags=["products-ai"])
 app.include_router(reservations.router, prefix="/reservations", tags=["reservations"])
 app.include_router(producers.router, prefix="/producer", tags=["producer"])
 app.include_router(fair_config.router, prefix="/fair-config", tags=["fair-config"])

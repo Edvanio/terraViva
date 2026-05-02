@@ -49,6 +49,7 @@ export default function PerfilPage() {
   const [isNew, setIsNew] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [geoHint, setGeoHint] = useState<{ city: string | null; state: string | null } | null>(null);
   const { toast } = useToast();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +93,39 @@ export default function PerfilPage() {
       })
       .catch(() => setLoading(false));
   }, [base]);
+
+  useEffect(() => {
+    const address = form.address?.trim();
+    if (!address || address.length < 6) {
+      setGeoHint(null);
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${base}/producer/geocode`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ address }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.city || data?.state) {
+          setGeoHint({ city: data.city ?? null, state: data.state ?? null });
+        }
+      } catch {
+        // sem bloqueio da UX
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [form.address, base]);
 
   async function uploadFile(file: File): Promise<string | null> {
     const token = getToken();
@@ -157,6 +191,10 @@ export default function PerfilPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.city.trim()) {
+      toast("Cidade e obrigatoria.", "error");
+      return;
+    }
     setSaving(true);
 
     const token = getToken();
@@ -320,7 +358,7 @@ export default function PerfilPage() {
           </h1>
           <p className="text-sm text-textSecondary">
             {isNew
-              ? "Preencha seu perfil para aparecer na feira"
+              ? "Preencha seu perfil para começar a vender"
               : "Suas informações aparecem na banca e nos pedidos"}
           </p>
         </div>
@@ -339,6 +377,7 @@ export default function PerfilPage() {
             placeholder="Ex: Sítio da Família Wessler"
             required
           />
+          <p className="mt-1 text-xs text-textSecondary">Campo obrigatorio para sugestao de preco com IA.</p>
         </div>
 
         <div>
@@ -414,6 +453,22 @@ export default function PerfilPage() {
             onChange={(e) => setForm({ ...form, address: e.target.value })}
             placeholder="Rua / localidade — para retirada no sítio"
           />
+          {geoHint?.city || geoHint?.state ? (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
+                📍 {geoHint.city ?? "Cidade"}{geoHint.state ? `, ${geoHint.state}` : ""}
+              </span>
+              {geoHint.city && geoHint.city !== form.city ? (
+                <button
+                  type="button"
+                  className="text-primary underline"
+                  onClick={() => setForm((prev) => ({ ...prev, city: geoHint.city || prev.city }))}
+                >
+                  Usar esta cidade
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <Button type="submit" size="lg" className="w-full" disabled={saving}>

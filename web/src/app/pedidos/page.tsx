@@ -28,7 +28,7 @@ export default function PedidosPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   async function handleCancel(orderId: string) {
-    if (!confirm("Cancelar esta reserva?")) return;
+    if (!confirm("Cancelar este pedido?")) return;
     setCancellingId(orderId);
     try {
       const token = localStorage.getItem("terra_viva_token");
@@ -118,7 +118,7 @@ export default function PedidosPage() {
                   disabled={cancellingId === order.id}
                   className="mt-2 text-xs text-red-500 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
                 >
-                  {cancellingId === order.id ? "Cancelando…" : "Cancelar reserva"}
+                  {cancellingId === order.id ? "Cancelando…" : "Cancelar pedido"}
                 </button>
               )}
             </div>

@@ -41,40 +41,40 @@ export function HomeActions() {
   }, []);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* CTAs */}
       <div className="grid grid-cols-2 gap-3">
         <Link
           href="/bancas"
-          className="group relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-md transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02]"
+          className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark p-5 text-white shadow-card transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02]"
         >
           <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 transition-transform duration-300 group-hover:scale-125" />
-          <span className="relative text-3xl">🛒</span>
+          <span className="relative text-4xl">🧺</span>
           <div className="relative">
-            <p className="font-bold leading-tight">Quero comprar</p>
-            <p className="mt-0.5 text-xs text-white/75 leading-tight">Veja o que tem na feira</p>
+            <p className="text-base font-bold leading-tight">Quero comprar</p>
+            <p className="mt-1 text-xs text-white/80 leading-tight">Veja o que tem de bom</p>
           </div>
         </Link>
 
         <Link
           href="/minha-banca"
-          className="group relative flex flex-col gap-3 overflow-hidden rounded-2xl border-2 border-primary bg-white p-5 text-primary shadow-md transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02] hover:bg-primary-subtle"
+          className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl border-2 border-earth bg-gradient-to-br from-earth-subtle to-surface p-5 text-earth shadow-card transition-all duration-200 hover:shadow-card-hover hover:scale-[1.02]"
         >
-          <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/5 transition-transform duration-300 group-hover:scale-125" />
-          <span className="relative text-3xl">🌽</span>
+          <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-earth/5 transition-transform duration-300 group-hover:scale-125" />
+          <span className="relative text-4xl">🌽</span>
           <div className="relative">
-            <p className="font-bold leading-tight">Quero vender</p>
-            <p className="mt-0.5 text-xs text-textSecondary leading-tight">Seus produtos na feira</p>
+            <p className="text-base font-bold leading-tight text-earth">Quero vender</p>
+            <p className="mt-1 text-xs text-textSecondary leading-tight">Gerencie seus produtos</p>
           </div>
         </Link>
       </div>
 
       {/* Minhas Reservas */}
       <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-base font-bold text-textPrimary">Minhas reservas</h2>
-          <Link href="/pedidos" className="text-xs font-medium text-primary hover:underline">
-            Ver todas
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold text-textPrimary">Meus pedidos</h2>
+          <Link href="/pedidos" className="text-xs font-bold text-primary hover:underline">
+            Ver todos →
           </Link>
         </div>
 
@@ -106,7 +106,7 @@ export function HomeActions() {
 
       {/* Solicitações */}
       <section>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-bold text-textPrimary">Pedidos que recebi</h2>
           {requests.length > 0 && (
             <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">
@@ -118,7 +118,7 @@ export function HomeActions() {
         {!loaded ? (
           <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-14 rounded-xl bg-border/40 animate-pulse" />)}</div>
         ) : requests.length === 0 ? (
-          <p className="text-sm text-textSecondary">Nenhum pedido recebido ainda. Quando alguém reservar, aparece aqui. 📦</p>
+          <p className="text-sm text-textSecondary">Nenhum pedido recebido ainda. Quando alguém pedir, aparece aqui. 🌿</p>
         ) : (
           <div className="space-y-2">
             {requests.slice(0, 3).map((req) => (

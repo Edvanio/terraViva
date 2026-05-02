@@ -6,6 +6,8 @@ export interface Product {
   description?: string | null;
   photo_url?: string | null;
   category?: string | null;
+  color_primary?: string | null;
+  color_accent?: string | null;
   is_active: boolean;
 }
 
@@ -55,7 +57,7 @@ export interface Reservation {
   producer_photo_url?: string | null;
   quantity: number;
   total_price: number;
-  pickup_location: "feira" | "produtor";
+  pickup_location: "feira" | "produtor" | "entrega";
   payment_intent: "cash" | "pix" | "card";
   status: "pending" | "confirmed" | "collected" | "cancelled";
   created_at: string;

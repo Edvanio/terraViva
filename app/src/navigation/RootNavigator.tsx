@@ -12,6 +12,7 @@ import { BancaScreen } from "@/screens/consumer/BancaScreen";
 import { CheckoutScreen } from "@/screens/consumer/CheckoutScreen";
 import { ProductsScreen } from "@/screens/producer/ProductsScreen";
 import { AddProductScreen } from "@/screens/producer/AddProductScreen";
+import { AIProductScreen } from "@/screens/producer/AIProductScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +47,7 @@ export function RootNavigator() {
           <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Reserva" }} />
           <Stack.Screen name="MyProducts" component={ProductsScreen} options={{ title: "Minha Banca" }} />
           <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: "Novo Produto" }} />
+          <Stack.Screen name="AIProduct" component={AIProductScreen} options={{ title: "Cadastro inteligente" }} />
         </>
       )}
     </Stack.Navigator>

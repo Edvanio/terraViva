@@ -5,7 +5,7 @@ export function FairStatusBanner({ fairConfig }: { fairConfig?: FairConfig | nul
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-4">
         <span className="text-xl">📅</span>
-        <p className="text-sm text-textSecondary">Nenhuma feira configurada para esta cidade.</p>
+        <p className="text-sm text-textSecondary">Nenhuma agenda configurada para esta cidade.</p>
       </div>
     );
   }
@@ -21,7 +21,7 @@ export function FairStatusBanner({ fairConfig }: { fairConfig?: FairConfig | nul
         <div>
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 animate-pulse rounded-full bg-green-300" />
-            <span className="text-sm font-semibold">Aberta para reservas</span>
+            <span className="text-sm font-semibold">Aceitando pedidos</span>
           </div>
           <p className="mt-1 text-xs text-white/65">
             Pedidos até {fairConfig.order_window_close}

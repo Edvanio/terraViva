@@ -1,32 +1,74 @@
 import type { Product } from "@/lib/types";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "./ui/Button";
+import { getCategoryIcon } from "./CategoryChip";
+import { hexToRgba } from "@/lib/format";
 
 export function ProductCard({ product, bancaId }: { product: Product; bancaId: string }) {
+  const hasPhoto = Boolean(product.photo_url && product.photo_url.trim());
+
+  const cardStyle = product.color_primary
+    ? {
+        borderColor: hexToRgba(product.color_primary, 0.3),
+      }
+    : undefined;
+
+  const categoryStyle = product.color_accent
+    ? {
+        backgroundColor: hexToRgba(product.color_accent, 0.12),
+        color: product.color_accent,
+      }
+    : undefined;
+
   return (
-    <article className="flex gap-4 rounded-xl bg-surface p-4 shadow-card transition hover:shadow-card-hover">
-      {/* Thumb */}
-      <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-primary-subtle text-3xl">
-        🧀
+    <article
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
+      style={cardStyle}
+    >
+      {/* Imagem grande em cima */}
+      <div className="relative h-40 w-full overflow-hidden bg-earth-subtle">
+        {hasPhoto ? (
+          <Image
+            src={product.photo_url!}
+            alt={product.name}
+            fill
+            unoptimized
+            className="object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-primary-subtle text-5xl">
+            {getCategoryIcon(product.category)}
+          </div>
+        )}
+        {/* Badge de categoria sobre a imagem */}
+        {product.category && (
+          <span
+            className="absolute left-3 top-3 inline-flex rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm"
+            style={categoryStyle}
+          >
+            {getCategoryIcon(product.category)} {product.category}
+          </span>
+        )}
       </div>
 
-      {/* Info */}
-      <div className="flex flex-1 flex-col justify-between">
+      {/* Info embaixo */}
+      <div className="flex flex-1 flex-col justify-between p-4">
         <div>
           <div className="flex items-start justify-between gap-2">
-            <h4 className="text-sm font-bold text-textPrimary leading-snug">{product.name}</h4>
-            <strong className="flex-shrink-0 text-base font-bold text-primary">
+            <h4 className="text-base font-bold leading-tight text-textPrimary">{product.name}</h4>
+            <strong className="flex-shrink-0 rounded-lg bg-primary-subtle px-2 py-0.5 text-lg font-extrabold text-primary">
               R$ {product.price.toFixed(2)}
             </strong>
           </div>
-          <p className="mt-1 line-clamp-2 text-xs text-textSecondary">
-            {product.description || "Produto fresco da semana"}
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-textSecondary">
+            {product.description || "Produto fresquinho, direto da terra"}
           </p>
         </div>
-        <div className="mt-3">
+        <div className="mt-4">
           <Link href={`/banca/${bancaId}/reservar?productId=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}`}>
-            <Button size="sm" className="w-full">
-              Reservar
+            <Button size="sm" className="w-full rounded-xl">
+              🌿 Pedir
             </Button>
           </Link>
         </div>

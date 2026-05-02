@@ -11,7 +11,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
 
       {/* CTAs principais + listas (componente client) */}
       <HomeActions />
@@ -19,7 +19,7 @@ export default async function HomePage() {
       {/* Divisor */}
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-xs font-medium text-textSecondary uppercase tracking-wider">Bancas da feira</span>
+        <span className="text-xs font-medium text-textSecondary uppercase tracking-wider">Produtores</span>
         <div className="h-px flex-1 bg-border" />
       </div>
 

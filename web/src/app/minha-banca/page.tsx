@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
+import { AIProductModal } from "@/components/AIProductModal";
 import { parsePrice } from "@/lib/format";
 
 interface Order {
@@ -33,6 +34,8 @@ interface Product {
   description?: string;
   photo_url?: string;
   category?: string;
+  color_primary?: string | null;
+  color_accent?: string | null;
   is_active: boolean;
 }
 
@@ -44,8 +47,9 @@ function getToken(): string | null {
 const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
 
 const PICKUP_LABEL: Record<string, string> = {
-  feira: "Retirada na feira",
-  produtor: "Retirar no local",
+  feira: "📍 Na feira",
+  produtor: "🏡 Buscar no produtor",
+  entrega: "🚗 Entrega em casa",
 };
 const PAYMENT_LABEL: Record<string, string> = {
   cash: "Dinheiro",
@@ -60,7 +64,9 @@ export default function MinhaBancaPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(true);
+  const [producerCity, setProducerCity] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [showAiModal, setShowAiModal] = useState(false);
   const { toast } = useToast();
 
   // Formulário novo produto
@@ -113,6 +119,11 @@ export default function MinhaBancaPage() {
       setHasProfile(false);
       setLoading(false);
       return;
+    }
+
+    if (profileRes.ok) {
+      const profile = await profileRes.json();
+      setProducerCity(profile.city || "");
     }
 
     if (ordersRes.ok) setOrders(await ordersRes.json());
@@ -182,6 +193,16 @@ export default function MinhaBancaPage() {
     }
   }
 
+  function startAiFlow() {
+    if (!navigator.onLine) {
+      toast("Sem internet. Abrindo cadastro manual.", "info");
+      setShowForm(true);
+      return;
+    }
+    setShowForm(false);
+    setShowAiModal(true);
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -197,7 +218,7 @@ export default function MinhaBancaPage() {
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <span className="text-5xl">🌱</span>
         <p className="text-xl font-bold text-textPrimary">Você ainda não tem perfil de vendedor</p>
-        <p className="text-textSecondary">Crie seu perfil para disponibilizar produtos na feira.</p>
+        <p className="text-textSecondary">Crie seu perfil para começar a vender seus produtos.</p>
         <Link href="/perfil">
           <Button size="lg" className="mt-2">Criar meu perfil</Button>
         </Link>
@@ -254,7 +275,7 @@ export default function MinhaBancaPage() {
             <div className="flex flex-col items-center gap-2 py-16 text-center">
               <span className="text-5xl">📭</span>
               <p className="text-textSecondary">Nenhum pedido recebido ainda.</p>
-              <p className="text-sm text-textSecondary">Quando alguém reservar, aparece aqui. 📦</p>
+              <p className="text-sm text-textSecondary">Quando alguém pedir, aparece aqui. 🌿</p>
             </div>
           ) : (
             orders.map((order) => {
@@ -347,8 +368,8 @@ export default function MinhaBancaPage() {
       {tab === "products" && (
         <div className="space-y-3">
           {!showForm ? (
-            <Button onClick={() => setShowForm(true)} className="w-full">
-              + Adicionar produto
+            <Button onClick={startAiFlow} className="w-full">
+              + Novo produto
             </Button>
           ) : (
             <div className="flex justify-end">
@@ -526,6 +547,20 @@ export default function MinhaBancaPage() {
           </div>
         </div>
       )}
+
+      <AIProductModal
+        open={showAiModal}
+        token={getToken() || ""}
+        city={producerCity}
+        onClose={() => setShowAiModal(false)}
+        onPublished={loadData}
+        onFallbackManual={(photoUrl) => {
+          setShowAiModal(false);
+          setShowForm(true);
+          if (photoUrl) setNewPhoto(photoUrl);
+          toast("IA indisponivel agora. Continue no cadastro manual.", "info");
+        }}
+      />
     </div>
   );
 }

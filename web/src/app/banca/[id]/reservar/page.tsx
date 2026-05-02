@@ -6,8 +6,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 const PICKUP_OPTS = [
-  { value: "feira", label: "📍 Na feira de sábado" },
-  { value: "produtor", label: "🏡 Na casa do produtor" },
+  { value: "feira", label: "📍 Na feira" },
+  { value: "produtor", label: "🏡 Buscar no produtor" },
+  { value: "entrega", label: "🚗 Receber em casa" },
 ];
 
 const PAYMENT_OPTS = [
@@ -25,7 +26,7 @@ export default function ReservarPage() {
   const productPrice = useMemo(() => parseFloat(searchParams.get("price") || "0"), [searchParams]);
 
   const [quantity, setQuantity] = useState(1);
-  const [pickupLocation, setPickupLocation] = useState<"feira" | "produtor">("feira");
+  const [pickupLocation, setPickupLocation] = useState<"feira" | "produtor" | "entrega">("feira");
   const [paymentIntent, setPaymentIntent] = useState<"cash" | "pix" | "card">("cash");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +85,7 @@ export default function ReservarPage() {
     return (
       <div className="mx-auto max-w-md space-y-6 py-10 text-center">
         <span className="block text-7xl">🎉</span>
-        <h1 className="text-2xl font-bold text-textPrimary">Reserva feita!</h1>
+        <h1 className="font-display text-2xl font-bold text-textPrimary">Pedido feito!</h1>
 
         <div className="rounded-2xl bg-surface p-6 shadow-card text-left space-y-3">
           <div className="flex justify-between">
@@ -104,7 +105,7 @@ export default function ReservarPage() {
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-textSecondary">Retirada</span>
+            <span className="text-textSecondary">Entrega</span>
             <span className="font-semibold text-textPrimary">{pickupLabel}</span>
           </div>
           <div className="flex justify-between">
@@ -118,7 +119,7 @@ export default function ReservarPage() {
             <Button size="lg" className="w-full">Ver meus pedidos</Button>
           </Link>
           <Link href="/">
-            <Button size="lg" variant="secondary" className="w-full">Voltar para a feira</Button>
+            <Button size="lg" variant="secondary" className="w-full">Voltar ao início</Button>
           </Link>
         </div>
       </div>
@@ -128,10 +129,10 @@ export default function ReservarPage() {
   return (
     <form
       onSubmit={onSubmit}
-      className="mx-auto max-w-xl space-y-5 rounded-2xl bg-surface p-6 shadow-card"
+      className="mx-auto max-w-xl space-y-6 rounded-3xl bg-surface p-6 shadow-card"
     >
       <div>
-        <h1 className="text-2xl font-bold text-textPrimary">Finalizar Reserva</h1>
+        <h1 className="font-display text-2xl font-bold text-textPrimary">Finalizar pedido</h1>
         <p className="mt-1 text-sm text-textSecondary">{productName}</p>
       </div>
 
@@ -167,14 +168,14 @@ export default function ReservarPage() {
       {/* Retirada */}
       <div>
         <label className="mb-2 block text-sm font-medium text-textPrimary">
-          Onde vai retirar?
+          Como quer receber?
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {PICKUP_OPTS.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              onClick={() => setPickupLocation(opt.value as "feira" | "produtor")}
+              onClick={() => setPickupLocation(opt.value as "feira" | "produtor" | "entrega")}
               className={`rounded-xl border-2 px-4 py-3 text-sm font-semibold transition ${
                 pickupLocation === opt.value
                   ? "border-primary bg-primary-subtle text-primary"
@@ -214,8 +215,8 @@ export default function ReservarPage() {
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       )}
 
-      <Button type="submit" size="lg" disabled={loading} className="w-full">
-        {loading ? "Reservando..." : "Confirmar reserva"}
+      <Button type="submit" size="lg" disabled={loading} className="w-full rounded-2xl">
+        {loading ? "Enviando..." : "🌿 Confirmar pedido"}
       </Button>
     </form>
   );
