@@ -35,13 +35,12 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=127.0.0.1
 
-# Instalar Node.js 20, nginx e supervisord
+# Instalar Node.js 20 e nginx (supervisor removido — usamos entrypoint.sh)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
         gnupg \
         nginx \
-        supervisor \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean \
@@ -64,9 +63,10 @@ COPY nginx/nginx.conf                       /etc/nginx/nginx.conf
 COPY nginx/conf.d/terra-viva-unified.conf   /etc/nginx/conf.d/default.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 
-# ---------- supervisord ----------
-# Sobrescreve o supervisord.conf do sistema para evitar conflito de seções
-COPY supervisord.conf /etc/supervisor/supervisord.conf
+# ---------- entrypoint -----------------------------------------------
+# Script shell simples — sem supervisord, sem socket, sem loop de restart
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Diretório de uploads persistente
 RUN mkdir -p /app/backend/uploads
@@ -77,4 +77,4 @@ EXPOSE 80
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
   CMD curl -fs http://127.0.0.1/ || exit 1
 
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["/entrypoint.sh"]
