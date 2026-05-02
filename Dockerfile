@@ -65,11 +65,16 @@ COPY nginx/conf.d/terra-viva-unified.conf   /etc/nginx/conf.d/default.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 
 # ---------- supervisord ----------
-COPY supervisord.conf /etc/supervisor/conf.d/terra-viva.conf
+# Sobrescreve o supervisord.conf do sistema para evitar conflito de seções
+COPY supervisord.conf /etc/supervisor/supervisord.conf
 
 # Diretório de uploads persistente
 RUN mkdir -p /app/backend/uploads
 
 EXPOSE 80
+
+# Healthcheck: nginx deve responder em até 30s
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+  CMD curl -fs http://127.0.0.1/ || exit 1
 
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
