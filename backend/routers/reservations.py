@@ -36,15 +36,8 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
     # Dados do consumidor
     consumer = db.users.find_one({"_id": document["consumer_id"]})
     if consumer:
-        consumer_name = consumer.get("name")
+        consumer_name = consumer.get("name") or None  # só mostra se tiver nome real
         consumer_phone = consumer.get("phone")
-        if not consumer_name and consumer_phone:
-            # Formata telefone BR: (XX) XXXXX-XXXX
-            p = consumer_phone.lstrip("+").lstrip("55")
-            if len(p) == 11:
-                consumer_name = f"({p[:2]}) {p[2:7]}-{p[7:]}"
-            else:
-                consumer_name = consumer_phone
 
     # Dados do produtor
     producer = db.producers.find_one({"_id": document["producer_id"]})

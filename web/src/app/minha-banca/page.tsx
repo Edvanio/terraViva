@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
 import { AIProductModal } from "@/components/AIProductModal";
 import { parsePrice } from "@/lib/format";
+import { useAuthGuard } from "@/lib/useAuthGuard";
 
 interface Order {
   id: string;
@@ -48,17 +49,18 @@ function getToken(): string | null {
 const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
 
 const PICKUP_LABEL: Record<string, string> = {
-  feira: "📍 Na feira",
-  produtor: "🏡 Buscar no produtor",
-  entrega: "🚗 Entrega em casa",
+  feira: "� Na feira",
+  produtor: "🌾 Buscar no produtor",
+  entrega: "🚜 Entrega em casa",
 };
 const PAYMENT_LABEL: Record<string, string> = {
-  cash: "Dinheiro",
-  pix: "Pix",
-  card: "Cartão",
+  cash: "💵 Dinheiro",
+  pix: "📲 Pix",
+  card: "💳 Cartão",
 };
 
 export default function MinhaBancaPage() {
+  const { ready } = useAuthGuard();
   const router = useRouter();
   const [tab, setTab] = useState<"orders" | "products">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -69,6 +71,7 @@ export default function MinhaBancaPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const { toast } = useToast();
+  const stockDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // Formulário novo produto
   const [showForm, setShowForm] = useState(false);
@@ -132,7 +135,7 @@ export default function MinhaBancaPage() {
     setLoading(false);
   }
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (ready) loadData(); }, [ready]);
 
   async function updateOrderStatus(orderId: string, status: Order["status"]) {
     const token = getToken();
@@ -146,24 +149,36 @@ export default function MinhaBancaPage() {
   }
 
   async function toggleProduct(productId: string, isActive: boolean) {
+    // Optimistic update
+    setProducts((prev) => prev.map((p) => p.id === productId ? { ...p, is_active: !isActive } : p));
     const token = getToken();
-    await fetch(`${base}/products/${productId}`, {
+    const res = await fetch(`${base}/products/${productId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ is_active: !isActive }),
     });
-    toast(isActive ? "Produto marcado como esgotado." : "Produto disponível! ✅");
-    await loadData();
+    if (!res.ok) {
+      setProducts((prev) => prev.map((p) => p.id === productId ? { ...p, is_active: isActive } : p));
+      toast("Erro ao atualizar produto.", "error");
+    } else {
+      toast(isActive ? "Marcado como esgotado." : "Produto disponível! ✅");
+    }
   }
 
-  async function updateStock(productId: string, newStock: number) {
-    const token = getToken();
-    await fetch(`${base}/products/${productId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ stock: Math.max(0, newStock) }),
-    });
-    await loadData();
+  function updateStock(productId: string, newStock: number) {
+    const clamped = Math.max(0, newStock);
+    // Optimistic update imediato
+    setProducts((prev) => prev.map((p) => p.id === productId ? { ...p, stock: clamped } : p));
+    // Debounce: só envia para API após 500ms de pausa
+    if (stockDebounceRef.current[productId]) clearTimeout(stockDebounceRef.current[productId]);
+    stockDebounceRef.current[productId] = setTimeout(() => {
+      const token = getToken();
+      fetch(`${base}/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ stock: clamped }),
+      });
+    }, 500);
   }
 
   async function deleteProduct(productId: string) {
@@ -290,96 +305,108 @@ export default function MinhaBancaPage() {
             </div>
           ) : (
             orders.map((order) => {
-              const displayName = order.consumer_name && !/^\d+$/.test(order.consumer_name)
-                ? order.consumer_name
-                : order.consumer_phone
-                  ? order.consumer_phone.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3")
-                  : "Consumidor";
+              const displayName = order.consumer_name || "Cliente";
               return (
-              <article key={order.id} className="rounded-xl bg-surface p-4 shadow-card animate-fade-in">
-                <div className="flex gap-3">
-                  {/* Foto do produto */}
+              <article key={order.id} className="overflow-hidden rounded-2xl bg-white shadow-card animate-fade-in">
+                {/* Topo: foto + info */}
+                <div className="flex gap-3 p-4">
                   {order.product_photo_url ? (
                     <Image
                       src={order.product_photo_url}
                       alt={order.product_name}
-                      width={72}
-                      height={72}
+                      width={88}
+                      height={88}
                       unoptimized
-                      className="h-[72px] w-[72px] flex-shrink-0 rounded-xl object-cover"
+                      className="h-[88px] w-[88px] flex-shrink-0 rounded-xl object-cover"
                     />
                   ) : (
-                    <div className="flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center rounded-xl bg-background text-3xl">
+                    <div className="flex h-[88px] w-[88px] flex-shrink-0 items-center justify-center rounded-xl bg-primary-subtle text-4xl">
                       {getCategoryIcon(order.product_category)}
                     </div>
                   )}
 
                   <div className="flex-1 min-w-0">
-                    {/* Título + status */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-base font-bold text-textPrimary truncate">{order.product_name}</p>
-                        {order.product_description && (
-                          <p className="line-clamp-1 text-xs text-textSecondary">{order.product_description}</p>
-                        )}
-                      </div>
+                      <p className="text-base font-bold text-textPrimary leading-tight truncate">{order.product_name}</p>
                       <Badge status={order.status} />
                     </div>
 
-                    {/* Qtd e valor */}
-                    <p className="mt-1 text-sm font-medium text-textPrimary">
-                      {order.quantity}x · R$ {order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {order.product_description && (
+                      <p className="mt-0.5 line-clamp-1 text-xs text-textSecondary">{order.product_description}</p>
+                    )}
+
+                    {/* Preço destaque */}
+                    <p className="mt-2 text-xl font-bold text-primary">
+                      R$ {order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      <span className="ml-1.5 text-sm font-normal text-textSecondary">{order.quantity}x</span>
                     </p>
 
-                    {/* Consumidor */}
-                    <div className="mt-1.5 flex items-center gap-1.5">
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[9px] font-bold text-primary">
-                        👤
-                      </div>
-                      <span className="text-xs text-textSecondary">{displayName}</span>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {/* Quem pediu + entrega + pagamento */}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        🧑‍🌾 {displayName}
+                      </span>
                       <span className="rounded-full bg-background px-2 py-0.5 text-xs text-textSecondary">
                         {PICKUP_LABEL[order.pickup_location] ?? order.pickup_location}
                       </span>
                       <span className="rounded-full bg-background px-2 py-0.5 text-xs text-textSecondary">
-                        💳 {PAYMENT_LABEL[order.payment_intent] ?? order.payment_intent}
+                        {PAYMENT_LABEL[order.payment_intent] ?? order.payment_intent}
                       </span>
                     </div>
-
-                    {/* WhatsApp do consumidor */}
-                    {order.consumer_phone && (
-                      <a
-                        href={`https://wa.me/55${order.consumer_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Oi! Sou o produtor do Terra Viva. Sobre seu pedido de ${order.quantity}x ${order.product_name} — `)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700"
-                      >
-                        💬 Falar no WhatsApp
-                      </a>
-                    )}
                   </div>
                 </div>
 
-                {order.status === "pending" && (
-                  <div className="mt-3 flex gap-2">
-                    <Button size="sm" className="flex-1" onClick={() => updateOrderStatus(order.id, "confirmed")}>
-                      ✅ Confirmar
-                    </Button>
-                    <Button size="sm" variant="ghost" className="flex-1" onClick={() => updateOrderStatus(order.id, "cancelled")}>
-                      ✕ Cancelar
-                    </Button>
-                  </div>
-                )}
-                {order.status === "confirmed" && (
-                  <div className="mt-3">
+                {/* Rodapé de ações */}
+                <div className="border-t border-border px-4 py-3 space-y-2">
+                  {/* Botões de status */}
+                  {order.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1" onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                        🤝 Confirmar pedido
+                      </Button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "cancelled")}
+                        className="text-sm text-red-500 font-medium hover:text-red-700 transition-colors px-2"
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  )}
+                  {order.status === "confirmed" && (
                     <Button size="sm" className="w-full" onClick={() => updateOrderStatus(order.id, "collected")}>
-                      🎉 Marcar como retirado
+                      🧺 Marcar como retirado
                     </Button>
-                  </div>
-                )}
+                  )}
+
+                  {/* WhatsApp */}
+                  {order.consumer_phone && (
+                    <a
+                      href={(() => {
+                        const pickup = { feira: "\ud83d\uded6 Na feira", produtor: "\ud83c\udf3e Buscar no produtor", entrega: "\ud83d\ude9c Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
+                        const payment = { cash: "\ud83d\udcb5 Dinheiro", pix: "\ud83d\udcf2 Pix", card: "\ud83d\udcb3 Cart\u00e3o" }[order.payment_intent] ?? order.payment_intent;
+                        const msg = [
+                          `Ol\u00e1${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! 👋`,
+                          ``,
+                          `Sou *${producerCity || "produtor"}* do *Terra Viva*. Recebi seu pedido:`,
+                          ``,
+                          `🛒 *${order.product_name}*`,
+                          `📦 Quantidade: ${order.quantity}x`,
+                          `💰 Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
+                          `📍 Retirada: ${pickup}`,
+                          `${payment}`,
+                          ``,
+                          `Vamos combinar os detalhes? 🌿`,
+                        ].join("\n");
+                        return `https://wa.me/55${order.consumer_phone!.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+                      })()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 py-2.5 text-sm font-bold text-green-700 hover:bg-green-100 active:scale-[0.98] transition-all"
+                    >
+                      💬 Falar no WhatsApp
+                    </a>
+                  )}
+                </div>
               </article>
               );
             })
@@ -391,9 +418,17 @@ export default function MinhaBancaPage() {
       {tab === "products" && (
         <div className="space-y-3">
           {!showForm ? (
-            <Button onClick={startAiFlow} className="w-full">
-              + Novo produto
-            </Button>
+            <button
+              onClick={startAiFlow}
+              className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-4 text-white shadow-card transition-all duration-200 hover:shadow-card-hover hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform duration-300 group-hover:scale-125" />
+              <span className="relative text-3xl">🧺</span>
+              <div className="relative text-center">
+                <p className="text-base font-bold leading-tight">Adicionar produto</p>
+                <p className="mt-0.5 text-xs text-white/75">A IA analisa a foto e preenche pra você</p>
+              </div>
+            </button>
           ) : (
             <div className="flex justify-end">
               <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setNewPhoto(""); }}>
@@ -528,7 +563,7 @@ export default function MinhaBancaPage() {
 
                   {/* Linha 2: Estoque */}
                   <div className="mt-3 flex items-center justify-between rounded-xl bg-background px-3 py-2">
-                    <span className="text-sm font-medium text-textSecondary">📦 Estoque disponível</span>
+                    <span className="text-sm font-medium text-textSecondary">🧺 Unidades no cesto</span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateStock(product.id, (product.stock ?? 0) - 1)}
@@ -548,18 +583,30 @@ export default function MinhaBancaPage() {
                     </div>
                   </div>
 
-                  {/* Linha 3: Ações */}
+                  {/* Linha 3: Disponível / Esgotado (segmented) + lixeira */}
                   <div className="mt-3 flex items-center gap-2">
-                    <button
-                      onClick={() => toggleProduct(product.id, product.is_active)}
-                      className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition ${
-                        product.is_active
-                          ? "bg-primary text-white"
-                          : "bg-red-100 text-red-700 border border-red-200"
-                      }`}
-                    >
-                      {product.is_active ? "✅ Disponível" : "❌ Esgotado"}
-                    </button>
+                    <div className="flex flex-1 gap-1 rounded-xl bg-background p-1">
+                      <button
+                        onClick={() => !product.is_active && toggleProduct(product.id, false)}
+                        className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+                          product.is_active
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-textSecondary hover:text-primary"
+                        }`}
+                      >
+                        🧺 Disponível
+                      </button>
+                      <button
+                        onClick={() => product.is_active && toggleProduct(product.id, true)}
+                        className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+                          !product.is_active
+                            ? "bg-red-500 text-white shadow-sm"
+                            : "text-textSecondary hover:text-red-500"
+                        }`}
+                      >
+                        🪣 Esgotado
+                      </button>
+                    </div>
                     <button
                       onClick={() => setConfirmDelete({ id: product.id, name: product.name })}
                       className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-lg text-red-500 transition hover:bg-red-100 hover:text-red-700"

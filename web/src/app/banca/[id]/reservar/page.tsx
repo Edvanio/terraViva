@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { useAuthGuard } from "@/lib/useAuthGuard";
 
 const PICKUP_OPTS = [
   { value: "feira", label: "📍 Na feira" },
@@ -18,6 +19,7 @@ const PAYMENT_OPTS = [
 ];
 
 export default function ReservarPage() {
+  const { ready } = useAuthGuard();
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
@@ -33,6 +35,8 @@ export default function ReservarPage() {
   const [success, setSuccess] = useState(false);
 
   const totalPrice = productPrice * quantity;
+
+  if (!ready) return null;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
