@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PROTECTED = ["/pedidos", "/perfil", "/minha-banca"];
+const PROTECTED_PATTERNS = [/^\/banca\/[^/]+\/reservar/];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("terra_viva_token")?.value;
 
-  const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
+  const isProtected =
+    PROTECTED.some((p) => pathname.startsWith(p)) ||
+    PROTECTED_PATTERNS.some((re) => re.test(pathname));
 
   if (isProtected && !token) {
     const url = request.nextUrl.clone();

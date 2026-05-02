@@ -1,7 +1,6 @@
 import type { Product } from "@/lib/types";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "./ui/Button";
 import { getCategoryIcon } from "./CategoryChip";
 import { hexToRgba } from "@/lib/format";
 
@@ -22,7 +21,8 @@ export function ProductCard({ product, bancaId }: { product: Product; bancaId: s
     : undefined;
 
   return (
-    <article
+    <Link
+      href={`/banca/${bancaId}/reservar?productId=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
       style={cardStyle}
     >
@@ -66,13 +66,11 @@ export function ProductCard({ product, bancaId }: { product: Product; bancaId: s
           </p>
         </div>
         <div className="mt-4">
-          <Link href={`/banca/${bancaId}/reservar?productId=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}`}>
-            <Button size="sm" className="w-full rounded-xl">
-              🌿 Pedir
-            </Button>
-          </Link>
+          <span className="flex w-full items-center justify-center rounded-xl bg-primary py-2 text-sm font-bold text-white group-hover:bg-primary-dark transition-colors">
+            🌿 Pedir
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { formatPhone } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
+import { useAuthGuard } from "@/lib/useAuthGuard";
 
 const PAYMENT_OPTIONS = [
   { value: "cash", label: "💵 Dinheiro" },
@@ -42,6 +43,7 @@ const EMPTY: ProfileData = {
 };
 
 export default function PerfilPage() {
+  const { ready } = useAuthGuard();
   const router = useRouter();
   const [form, setForm] = useState<ProfileData>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,7 @@ export default function PerfilPage() {
   }
 
   useEffect(() => {
+    if (!ready) return;
     const token = getToken();
     if (!token) { router.replace("/login"); return; }
 
@@ -92,7 +95,7 @@ export default function PerfilPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [base]);
+  }, [base, ready]);
 
   useEffect(() => {
     const address = form.address?.trim();
@@ -369,12 +372,12 @@ export default function PerfilPage() {
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">
-            Nome da banca / cidade
+            Seu nome
           </label>
           <Input
             value={form.city}
             onChange={(e) => setForm({ ...form, city: e.target.value })}
-            placeholder="Ex: Sítio da Família Wessler"
+            placeholder="Ex: Maria Oliveira ou Família Wessler"
             required
           />
           <p className="mt-1 text-xs text-textSecondary">Campo obrigatorio para sugestao de preco com IA.</p>
