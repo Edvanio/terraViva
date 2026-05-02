@@ -4,7 +4,7 @@ region: nyc
 services:
   - name: app
     # Constrói a partir do Dockerfile.unified na raiz do repositório
-    dockerfile_path: Dockerfile.unified
+    dockerfile_path: Dockerfile
     github:
       branch: main
       deploy_on_push: true

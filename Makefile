@@ -28,7 +28,7 @@ app:
 # Constrói a imagem unificada (backend + frontend + nginx)
 build-hub:
 	docker build \
-		-f Dockerfile.unified \
+		-f Dockerfile \
 		-t $(FULL_IMAGE) \
 		.
 
