@@ -66,8 +66,8 @@ export function ProductCard({ product, bancaId, hasFair }: { product: Product; b
           </p>
         </div>
         <div className="mt-4">
-          <span className="flex w-full items-center justify-center rounded-xl bg-primary py-2 text-sm font-bold text-white group-hover:bg-primary-dark transition-colors">
-            🌿 Pedir
+          <span className="flex w-full items-center justify-center rounded-xl bg-primary py-3 text-base font-bold text-white group-hover:bg-primary-dark transition-colors">
+            🛒 Quero esse!
           </span>
         </div>
       </div>

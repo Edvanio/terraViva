@@ -82,6 +82,22 @@ export function BancaCard({ banca }: { banca: Banca }) {
           {banca.bio || "Produtos frescos direto da terra 🌱"}
         </p>
 
+        {/* Badges */}
+        {banca.badges && banca.badges.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {banca.badges.slice(0, 3).map((badge) => (
+              <span key={badge} className="rounded-full bg-primary-subtle px-2 py-0.5 text-[10px] font-bold text-primary">
+                {badge === "organico" && "🌿 Orgânico"}
+                {badge === "agroecologico" && "🌎 Agroecológico"}
+                {badge === "familiar" && "👨‍👩‍👧 Familiar"}
+                {badge === "sem_agrotoxicos" && "🚫 Sem Agrotóxicos"}
+                {badge === "artesanal" && "🧶 Artesanal"}
+                {badge === "colonial" && "🏡 Colonial"}
+              </span>
+            ))}
+          </div>
+        )}
+
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-textSecondary">
             <span className="text-amber">&#9733;</span>

@@ -31,6 +31,7 @@ interface ProfileData {
   pix_key: string;
   fair_location: string;
   payment_methods: string[];
+  badges: string[];
   phone: string;
   photo_url: string | null;
   cover_url: string | null;
@@ -44,10 +45,20 @@ const EMPTY: ProfileData = {
   pix_key: "",
   fair_location: "",
   payment_methods: ["cash", "pix"],
+  badges: [],
   phone: "",
   photo_url: null,
   cover_url: null,
 };
+
+const BADGE_OPTIONS = [
+  { value: "organico", label: "🌿 Orgânico" },
+  { value: "agroecologico", label: "🌎 Agroecológico" },
+  { value: "familiar", label: "👨‍👩‍👧 Agricultura Familiar" },
+  { value: "sem_agrotoxicos", label: "🚫 Sem Agrotóxicos" },
+  { value: "artesanal", label: "🧶 Artesanal" },
+  { value: "colonial", label: "🏡 Colonial" },
+];
 
 export default function PerfilPage() {
   return (
@@ -110,6 +121,7 @@ function PerfilContent() {
           pix_key: data.pix_key ?? "",
           fair_location: data.fair_location ?? "",
           payment_methods: data.payment_methods ?? ["cash"],
+          badges: data.badges ?? [],
           phone: formatPhone(data.phone || tokenPhone),
           photo_url: data.photo_url ?? null,
           cover_url: data.cover_url ?? null,
@@ -286,6 +298,7 @@ function PerfilContent() {
 
   // Auto-save com debounce
   const paymentMethodsKey = JSON.stringify(form.payment_methods);
+  const badgesKey = JSON.stringify(form.badges);
   useEffect(() => {
     if (!loaded) return;
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
@@ -293,7 +306,7 @@ function PerfilContent() {
       saveProfile();
     }, 1500);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
-  }, [form.name, form.bio, form.address, form.city, form.fair_location, paymentMethodsKey, loaded]);
+  }, [form.name, form.bio, form.address, form.city, form.fair_location, paymentMethodsKey, badgesKey, loaded]);
 
   async function saveProfile() {
     const token = getToken();
@@ -306,6 +319,7 @@ function PerfilContent() {
       city: form.city ?? "",
       bio: form.bio ?? "",
       payment_methods: form.payment_methods,
+      badges: form.badges,
       ...(form.photo_url ? { photo_url: form.photo_url } : {}),
       ...(form.cover_url ? { cover_url: form.cover_url } : {}),
       ...(form.address ? { address: form.address } : {}),
@@ -558,6 +572,37 @@ function PerfilContent() {
                   className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                     active
                       ? "border-primary bg-primary text-white"
+                      : "border-border bg-background text-textSecondary hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-textPrimary">
+            Selos e certificações
+          </label>
+          <p className="mb-2 text-xs text-textSecondary">Selecione o que descreve sua produção. Aparece na sua banca pública.</p>
+          <div className="flex flex-wrap gap-2">
+            {BADGE_OPTIONS.map((opt) => {
+              const active = form.badges.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setForm((prev) => ({
+                    ...prev,
+                    badges: active
+                      ? prev.badges.filter((b) => b !== opt.value)
+                      : [...prev.badges, opt.value],
+                  }))}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    active
+                      ? "border-primary bg-primary text-white shadow-sm"
                       : "border-border bg-background text-textSecondary hover:border-primary hover:text-primary"
                   }`}
                 >

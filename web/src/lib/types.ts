@@ -20,6 +20,7 @@ export interface Banca {
   bio: string;
   city: string;
   payment_methods: string[];
+  badges?: string[];
   photo_url?: string | null;
   cover_url?: string | null;
   categories?: string[];

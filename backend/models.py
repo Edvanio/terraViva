@@ -41,6 +41,7 @@ class UserProfileUpdate(BaseModel):
     address: Optional[str] = None
     fair_location: Optional[str] = None
     expo_push_token: Optional[str] = None
+    badges: Optional[list[str]] = None
 
 
 class UserProfileResponse(BaseModel):
@@ -57,6 +58,7 @@ class UserProfileResponse(BaseModel):
     pix_key: Optional[str] = None
     address: Optional[str] = None
     fair_location: Optional[str] = None
+    badges: list[str] = []
 
 
 class BancaResponse(BaseModel):
@@ -71,6 +73,7 @@ class BancaResponse(BaseModel):
     cover_url: Optional[str] = None
     categories: list[str] = []
     products_count: int = 0
+    badges: list[str] = []
 
 
 class ProductCreate(BaseModel):
