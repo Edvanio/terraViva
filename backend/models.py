@@ -36,6 +36,7 @@ class BancaResponse(BaseModel):
     photo_url: Optional[str] = None
     cover_url: Optional[str] = None
     categories: list[str] = []
+    products_count: int = 0
 
 
 class BancaDetailResponse(BancaResponse):

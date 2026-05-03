@@ -26,6 +26,7 @@ def list_bancas():
             photo_url=item.get("photo_url"),
             cover_url=item.get("cover_url"),
             categories=categories,
+            products_count=len(products),
         ))
     return result
 

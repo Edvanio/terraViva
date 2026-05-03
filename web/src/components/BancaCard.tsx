@@ -4,7 +4,7 @@ import type { Banca } from "@/lib/types";
 
 export function BancaCard({ banca }: { banca: Banca }) {
   const initial = banca.city?.charAt(0).toUpperCase() ?? "B";
-  const productCount = banca.products?.length ?? 0;
+  const productCount = banca.products_count ?? banca.products?.length ?? 0;
   const hasPhoto = !!banca.photo_url;
 
   return (

@@ -1,6 +1,8 @@
 ﻿import Link from "next/link";
+import { getAuthToken } from "@/lib/auth";
 
 export async function Header() {
+  const token = await getAuthToken();
   return (
     <header className="sticky top-0 z-20 border-b border-border/60 bg-surface/90 backdrop-blur-lg">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-center px-4 py-3 md:justify-between">
@@ -35,12 +37,20 @@ export async function Header() {
           <Link href="/bancas" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
             Bancas
           </Link>
-          <Link href="/minha-banca" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
-            Minha banca
-          </Link>
-          <Link href="/perfil" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
-            Perfil
-          </Link>
+          {token && (
+            <Link href="/minha-banca" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
+              Minha banca
+            </Link>
+          )}
+          {token ? (
+            <Link href="/perfil" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
+              Perfil
+            </Link>
+          ) : (
+            <Link href="/login" className="rounded-lg px-3 py-2 font-medium text-primary transition hover:bg-primary-subtle">
+              Entrar
+            </Link>
+          )}
         </nav>
       </div>
     </header>

@@ -5,22 +5,22 @@ import { Button } from "@/components/ui/Button";
 
 const SLIDES = [
   {
-    emoji: "�",
+    emoji: "🌿",
     title: "Bem-vindo ao Terra Viva",
     desc: "Compre direto de quem produz.\nFresquinho, sem intermediário, do jeito da colônia.",
-    bg: "from-primary/10 to-earth-subtle",
+    bg: "bg-surface",
   },
   {
     emoji: "🧺",
     title: "Como funciona",
     desc: "Escolha o produtor, peça o que quiser.\nRetire na feira, busque na propriedade\nou receba em casa!",
-    bg: "from-accent-light to-primary-subtle",
+    bg: "bg-surface",
   },
   {
     emoji: "🌽",
     title: "Quer vender?",
     desc: "Tire a foto do produto e a IA faz o resto.\nReceba pedidos no celular — bem fácil!",
-    bg: "from-primary-subtle to-earth-subtle",
+    bg: "bg-surface",
   },
 ];
 
@@ -48,7 +48,7 @@ export function Onboarding() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-      <div className={`w-full max-w-sm rounded-3xl bg-gradient-to-br ${s.bg} px-8 py-10 shadow-card-hover text-center space-y-5 border border-border`}>
+      <div className={`w-full max-w-sm rounded-3xl ${s.bg} px-8 py-10 shadow-card-hover text-center space-y-5 border border-border`}>
         <span className="text-7xl block drop-shadow-sm">{s.emoji}</span>
         <h2 className="font-display text-2xl font-bold text-textPrimary">{s.title}</h2>
         <p className="text-base text-textSecondary whitespace-pre-line leading-relaxed">{s.desc}</p>

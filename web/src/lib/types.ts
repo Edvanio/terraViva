@@ -20,6 +20,7 @@ export interface Banca {
   photo_url?: string | null;
   cover_url?: string | null;
   categories?: string[];
+  products_count?: number;
   gallery?: string[];
   address?: string | null;
   pix_key?: string | null;
