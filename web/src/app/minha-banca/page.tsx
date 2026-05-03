@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ interface Order {
   consumer_phone?: string | null;
   quantity: number;
   total_price: number;
-  status: "pending" | "confirmed" | "collected" | "cancelled";
+  status: "pending" | "confirmed" | "collected" | "cancelled" | "fiado";
   pickup_location: string;
   payment_intent: string;
   updated_at: string;
@@ -74,7 +75,7 @@ const PAYMENT_LABEL: Record<string, string> = {
 export default function MinhaBancaPage() {
   const { ready } = useAuthGuard();
   const router = useRouter();
-  const [tab, setTab] = useState<"orders" | "products">("orders");
+  const [tab, setTab] = useState<"orders" | "products" | "fiados">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,7 +150,10 @@ export default function MinhaBancaPage() {
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
       setOrders(ordersData);
-      if (ordersData.length === 0) setTab("products");
+      const hasPending = ordersData.some((o: Order) => o.status === "pending" || o.status === "confirmed");
+      const hasFiados = ordersData.some((o: Order) => o.status === "fiado");
+      if (!hasPending && hasFiados) setTab("fiados");
+      else if (!hasPending && !hasFiados) setTab("products");
     }
     if (productsRes.ok) setProducts(await productsRes.json());
     setLoading(false);
@@ -164,7 +168,13 @@ export default function MinhaBancaPage() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
     });
-    toast(status === "confirmed" ? "Pedido confirmado! ✅" : status === "collected" ? "Marcado como retirado! 🎉" : "Pedido cancelado.");
+    const msgs: Record<string, string> = {
+      confirmed: "Pedido confirmado! ✅",
+      collected: "Pago e retirado! 🎉",
+      fiado: "Anotado no fiado! 📝",
+      cancelled: "Pedido cancelado.",
+    };
+    toast(msgs[status] || "Atualizado!");
     await loadData();
   }
 
@@ -220,8 +230,11 @@ export default function MinhaBancaPage() {
     setNewCategory(product.category ?? "");
     setNewUnit(product.unit ?? "unidade");
     setNewPhoto(product.photo_url ?? "");
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeEdit() {
+    setEditingId(null);
+    setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade");
   }
 
   async function addProduct(e: React.FormEvent) {
@@ -246,10 +259,11 @@ export default function MinhaBancaPage() {
     });
     setSaving(false);
     if (res.ok) {
+      const wasEditing = !!editingId;
       setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade");
       setEditingId(null);
       setShowForm(false);
-      toast(editingId ? "Produto atualizado! ✅" : "Produto adicionado! ✅");
+      toast(wasEditing ? "Produto atualizado! ✅" : "Produto adicionado! ✅");
       await loadData();
     } else {
       toast("Não conseguimos salvar. Tente de novo.", "error");
@@ -308,10 +322,25 @@ export default function MinhaBancaPage() {
               : "text-textSecondary hover:text-textPrimary"
           }`}
         >
-          📦 Pedidos recebidos
+          📦 Pedidos
           {orders.filter((o) => o.status === "pending").length > 0 && (
             <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-xs text-white">
               {orders.filter((o) => o.status === "pending").length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab("fiados")}
+          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+            tab === "fiados"
+              ? "bg-surface text-amber-600 shadow-card"
+              : "text-textSecondary hover:text-textPrimary"
+          }`}
+        >
+          📝 Fiados
+          {orders.filter((o) => o.status === "fiado").length > 0 && (
+            <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white">
+              {orders.filter((o) => o.status === "fiado").length}
             </span>
           )}
         </button>
@@ -323,7 +352,7 @@ export default function MinhaBancaPage() {
               : "text-textSecondary hover:text-textPrimary"
           }`}
         >
-          🧀 Meus produtos
+          🧀 Produtos
         </button>
       </div>
 
@@ -371,8 +400,10 @@ export default function MinhaBancaPage() {
                     {/* Preço destaque */}
                     <p className="mt-2 text-xl font-bold text-primary">
                       R$ {order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      <span className="ml-1.5 text-sm font-normal text-textSecondary">{order.quantity}x</span>
                     </p>
+                    <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary-subtle px-2.5 py-0.5 text-sm font-semibold text-primary">
+                      📦 {order.quantity}x {order.product_name.split(" ")[0]}
+                    </span>
 
                     {/* Quem pediu + entrega + pagamento */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -406,9 +437,26 @@ export default function MinhaBancaPage() {
                     </div>
                   )}
                   {order.status === "confirmed" && (
-                    <Button size="sm" className="w-full" onClick={() => updateOrderStatus(order.id, "collected")}>
-                      🧺 Marcar como retirado
-                    </Button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "collected")}
+                        className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-700 transition-colors"
+                      >
+                        Pago
+                      </button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "fiado")}
+                        className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors"
+                      >
+                        Fiado
+                      </button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "cancelled")}
+                        className="flex-1 rounded-xl bg-red-100 py-2.5 text-sm font-bold text-red-600 hover:bg-red-200 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   )}
 
                   {/* WhatsApp */}
@@ -456,6 +504,60 @@ export default function MinhaBancaPage() {
         </div>
       )}
 
+
+      {/* ── FIADOS ── */}
+      {tab === "fiados" && (
+        <div className="space-y-4">
+          {orders.filter((o) => o.status === "fiado").length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16 text-center">
+              <span className="text-5xl">🎉</span>
+              <p className="font-medium text-textPrimary">Nenhum fiado pendente!</p>
+              <p className="text-sm text-textSecondary">Quando anotar um fiado, aparece aqui.</p>
+            </div>
+          ) : (
+            (() => {
+              const fiados = orders.filter((o) => o.status === "fiado");
+              const grouped: Record<string, Order[]> = {};
+              fiados.forEach((o) => {
+                const key = o.consumer_name || "Cliente";
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(o);
+              });
+              return Object.entries(grouped).map(([name, items]) => {
+                const total = items.reduce((s, o) => s + o.total_price, 0);
+                return (
+                  <div key={name} className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-base font-bold text-textPrimary">🧑‍🌾 {name}</h4>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700">
+                        R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-textPrimary truncate">{item.product_name}</p>
+                            <p className="text-xs text-textSecondary">
+                              {new Date(item.updated_at).toLocaleDateString("pt-BR")} · {item.quantity}x · R$ {item.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => updateOrderStatus(item.id, "collected")}
+                            className="ml-3 flex-shrink-0 rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700 transition-colors"
+                          >
+                            💰 Recebi
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()
+          )}
+        </div>
+      )}
       {/* ── PRODUTOS ── */}
       {tab === "products" && (
         <div className="space-y-3">
@@ -473,7 +575,7 @@ export default function MinhaBancaPage() {
             </button>
           ) : (
             <div className="flex justify-end">
-              <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setEditingId(null); setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade"); }}>
+              <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade"); }}>
                 ✕ Cancelar
               </Button>
             </div>
@@ -533,7 +635,7 @@ export default function MinhaBancaPage() {
                 <select
                   value={newUnit}
                   onChange={(e) => setNewUnit(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                  className="w-full h-[42px] rounded-xl border border-border bg-background px-3 text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M6%208L1%203h10z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8"
                 >
                   <option value="unidade">Unidade</option>
                   <option value="kg">Kg</option>
@@ -705,6 +807,133 @@ export default function MinhaBancaPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de edição de produto */}
+      {editingId && createPortal(
+        <div className="fixed top-0 left-0 right-0 bottom-0 z-[99999] flex items-start sm:items-center justify-center bg-black/60 sm:overflow-y-auto sm:p-4">
+          <form onSubmit={addProduct} className="w-full sm:max-w-md h-full sm:h-auto sm:max-h-[85vh] overflow-y-auto sm:rounded-2xl sm:border sm:border-border/50 bg-surface px-4 pt-3 pb-6 sm:p-5 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-textPrimary">✏️ Editar produto</h3>
+              <button type="button" onClick={closeEdit} className="text-textSecondary text-xl leading-none">✕</button>
+            </div>
+            <Input
+              placeholder="Nome do produto"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              required
+            />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-textSecondary">R$</span>
+                <Input
+                  placeholder="28,00"
+                  inputMode="decimal"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  className="pl-9"
+                  required
+                />
+              </div>
+              <select
+                value={newUnit}
+                onChange={(e) => setNewUnit(e.target.value)}
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M6%208L1%203h10z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8"
+              >
+                <option value="unidade">Unidade</option>
+                <option value="kg">Kg</option>
+                <option value="g">Gramas</option>
+                <option value="litro">Litro</option>
+                <option value="ml">ml</option>
+                <option value="duzia">Dúzia</option>
+                <option value="pe">Pé</option>
+                <option value="bandeja">Bandeja</option>
+                <option value="pote">Pote</option>
+                <option value="fatia">Fatia</option>
+                <option value="pacote">Pacote</option>
+                <option value="saco">Saco</option>
+                <option value="maco">Maço</option>
+              </select>
+            </div>
+            <Input
+              placeholder="Descrição (opcional)"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
+
+            {/* Categoria */}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-textSecondary">Categoria</p>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setNewCategory(newCategory === cat.value ? "" : cat.value)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
+                      newCategory === cat.value
+                        ? "border-primary bg-primary text-white shadow-sm"
+                        : "border-border bg-surface text-textSecondary"
+                    }`}
+                  >
+                    <span className="text-sm">{cat.icon}</span>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Foto */}
+            <div className="flex items-center gap-3">
+              {newPhoto ? (
+                <div className="relative">
+                  <Image
+                    src={newPhoto}
+                    alt="Foto do produto"
+                    width={56}
+                    height={56}
+                    unoptimized
+                    className="h-14 w-14 rounded-xl object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setNewPhoto("")}
+                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <PhotoPickerPopup onFileSelected={uploadProductPhoto} disabled={uploadingPhoto}>
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    className="flex items-center gap-2 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-textSecondary transition hover:border-primary hover:text-primary disabled:opacity-60"
+                  >
+                    📷 {uploadingPhoto ? "Enviando..." : "Foto"}
+                  </button>
+                </PhotoPickerPopup>
+              )}
+            </div>
+
+            {/* Ações */}
+            <div className="flex gap-2 pt-2 sticky bottom-0 bg-surface pb-1">
+              <Button type="submit" size="sm" className="flex-1 py-2.5" disabled={saving || uploadingPhoto}>
+                {saving ? "Salvando..." : "✅ Salvar"}
+              </Button>
+              <Button type="button" size="sm" variant="secondary" className="flex-1 py-2.5" onClick={closeEdit}>
+                ✕ Cancelar
+              </Button>
+              <button
+                type="button"
+                onClick={() => { closeEdit(); setConfirmDelete({ id: editingId, name: newName }); }}
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-lg text-red-600 transition hover:bg-red-100"
+              >
+                🗑️
+              </button>
+            </div>
+          </form>
+        </div>
+      , document.body)}
 
       <AIProductModal
         open={showAiModal}

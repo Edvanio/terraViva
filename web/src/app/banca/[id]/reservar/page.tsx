@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { CustomerInfoPrompt } from "@/components/CustomerInfoPrompt";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 
 const PICKUP_OPTS = [
@@ -35,10 +36,54 @@ export default function ReservarPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [userName, setUserName] = useState<string | null | undefined>(undefined); // undefined = loading
+  const [userCity, setUserCity] = useState<string | null>(null);
 
   const totalPrice = productPrice * quantity;
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
 
-  if (!ready) return null;
+  // Fetch user profile to check if name exists
+  useEffect(() => {
+    if (!ready) return;
+    const token = localStorage.getItem("terra_viva_token");
+    if (!token) return;
+    fetch(`${base}/producer/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        setUserName(data?.name || null);
+        setUserCity(data?.city || null);
+      })
+      .catch(() => setUserName(null));
+  }, [ready]);
+
+  async function handleInfoComplete(data: { name: string; city?: string }) {
+    const token = localStorage.getItem("terra_viva_token");
+    if (!token) return;
+    await fetch(`${base}/producer/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name: data.name, city: data.city || undefined }),
+    });
+    setUserName(data.name);
+    if (data.city) setUserCity(data.city);
+  }
+
+  if (!ready || userName === undefined) return null;
+
+  // Show name/city prompt if user has no name
+  if (!userName) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <CustomerInfoPrompt
+          currentName={userName}
+          currentCity={userCity}
+          onComplete={handleInfoComplete}
+        />
+      </div>
+    );
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

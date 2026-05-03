@@ -140,7 +140,7 @@ class ReservationCreate(BaseModel):
 
 
 class ReservationStatusUpdate(BaseModel):
-    status: Literal["pending", "confirmed", "collected", "cancelled"]
+    status: Literal["pending", "confirmed", "collected", "cancelled", "fiado"]
 
 
 class ReservationResponse(BaseModel):
@@ -162,7 +162,7 @@ class ReservationResponse(BaseModel):
     total_price: float
     pickup_location: Literal["feira", "produtor", "entrega"]
     payment_intent: Literal["cash", "pix", "card"]
-    status: Literal["pending", "confirmed", "collected", "cancelled"]
+    status: Literal["pending", "confirmed", "collected", "cancelled", "fiado"]
     created_at: datetime
     updated_at: datetime
 

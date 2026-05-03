@@ -1,11 +1,12 @@
 interface Props {
-  status: "pending" | "confirmed" | "collected" | "cancelled";
+  status: "pending" | "confirmed" | "collected" | "cancelled" | "fiado";
 }
 
 const MAP: Record<string, { cls: string; label: string }> = {
   pending:   { cls: "bg-yellow-100 text-yellow-800", label: "Aguardando" },
   confirmed: { cls: "bg-emerald-100 text-emerald-800", label: "Confirmado" },
-  collected: { cls: "bg-green-100 text-green-900",   label: "Retirado" },
+  collected: { cls: "bg-green-100 text-green-900",   label: "Pago" },
+  fiado:     { cls: "bg-amber-100 text-amber-800",   label: "Fiado" },
   cancelled: { cls: "bg-red-100 text-red-800",       label: "Cancelado" },
 };
 
