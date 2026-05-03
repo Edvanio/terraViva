@@ -100,9 +100,8 @@ export function BancaCard({ banca }: { banca: Banca }) {
 
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm text-textSecondary">
-            <span className="text-amber">&#9733;</span>
-            <span className="font-bold text-textPrimary">4.9</span>
-            <span>· {productCount} produto{productCount !== 1 ? "s" : ""}</span>
+            <span>🌿</span>
+            <span>{productCount} produto{productCount !== 1 ? "s" : ""}</span>
           </div>
           {banca.payment_methods?.length > 0 && (
             <span className="rounded-full bg-earth-subtle px-2.5 py-0.5 text-xs font-bold text-earth">

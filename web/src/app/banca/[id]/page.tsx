@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import type { Banca } from "@/lib/types";
+import type { Banca, Review } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { ShareButton } from "@/components/ShareButton";
 import { apiGet } from "@/lib/api";
@@ -9,10 +9,18 @@ export const dynamic = "force-dynamic";
 
 export default async function BancaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const banca = await apiGet<Banca>(`/bancas/${id}`).catch(() => null);
+  const [banca, reviews] = await Promise.all([
+    apiGet<Banca>(`/bancas/${id}`).catch(() => null),
+    apiGet<Review[]>(`/reviews/banca/${id}`).catch(() => [] as Review[]),
+  ]);
   if (!banca) return notFound();
   const displayName = banca.name || banca.city || "Banca";
   const initial = displayName.charAt(0).toUpperCase();
+
+  const ratingCount = reviews.length;
+  const ratingAvg = ratingCount > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / ratingCount
+    : null;
 
   return (
     <div className="space-y-6">
@@ -70,10 +78,13 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
             <div className="flex flex-shrink-0 flex-col items-end gap-2">
-              <div className="flex items-center gap-1.5 rounded-full bg-amber-light px-3 py-1.5">
-                <span className="text-amber text-base">&#9733;</span>
-                <span className="font-bold text-textPrimary text-sm">4.9</span>
-              </div>
+              {ratingAvg !== null && (
+                <div className="flex items-center gap-1.5 rounded-full bg-amber-light px-3 py-1.5">
+                  <span className="text-amber text-base">&#9733;</span>
+                  <span className="font-bold text-textPrimary text-sm">{ratingAvg.toFixed(1)}</span>
+                  <span className="text-xs text-textSecondary">({ratingCount})</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -139,6 +150,35 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
                   unoptimized
                   className="object-cover"
                 />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Avaliações reais */}
+      {reviews.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-textPrimary">
+            <span>⭐</span> Avaliações ({ratingCount})
+          </h2>
+          <div className="space-y-3">
+            {reviews.slice(0, 5).map((review) => (
+              <div key={review.id} className="rounded-2xl bg-surface px-4 py-3 shadow-card">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-textPrimary">{review.consumer_name || "Consumidor"}</p>
+                  <div className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className={i < review.rating ? "text-amber" : "text-gray-300"}>★</span>
+                    ))}
+                  </div>
+                </div>
+                {review.comment && (
+                  <p className="mt-1.5 text-sm text-textSecondary leading-relaxed">{review.comment}</p>
+                )}
+                <p className="mt-1 text-xs text-textSecondary/60">
+                  {new Date(review.created_at).toLocaleDateString("pt-BR")}
+                </p>
               </div>
             ))}
           </div>

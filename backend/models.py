@@ -170,6 +170,23 @@ class ReservationResponse(BaseModel):
     updated_at: datetime
 
 
+class ReviewCreate(BaseModel):
+    reservation_id: str
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = None
+
+
+class ReviewResponse(BaseModel):
+    id: str
+    consumer_id: str
+    producer_id: str
+    reservation_id: str
+    rating: int
+    comment: Optional[str] = None
+    consumer_name: Optional[str] = None
+    created_at: datetime
+
+
 class FairConfigCreate(BaseModel):
     name: str
     city: str
