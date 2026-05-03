@@ -48,7 +48,7 @@ function getToken(): string | null {
 const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
 
 const PICKUP_LABEL: Record<string, string> = {
-  feira: "� Na feira",
+  feira: "🏪 Na feira",
   produtor: "🌾 Buscar no produtor",
   entrega: "🚜 Entrega em casa",
 };
@@ -107,8 +107,7 @@ export default function MinhaBancaPage() {
   async function loadData() {
     const token = getToken();
     if (!token) {
-      setIsLoggedIn(false);
-      setLoading(false);
+      router.replace(`/login?redirect=${encodeURIComponent("/minha-banca")}`);
       return;
     }
     setIsLoggedIn(true);
@@ -121,7 +120,14 @@ export default function MinhaBancaPage() {
 
     if (profileRes.ok) {
       const profile = await profileRes.json();
+      if (!profile.name) {
+        router.replace(`/perfil?redirect=${encodeURIComponent("/minha-banca")}`);
+        return;
+      }
       setProducerCity(profile.city || "");
+    } else {
+      router.replace(`/perfil?redirect=${encodeURIComponent("/minha-banca")}`);
+      return;
     }
 
     if (ordersRes.ok) setOrders(await ordersRes.json());
@@ -234,16 +240,7 @@ export default function MinhaBancaPage() {
   }
 
   if (!isLoggedIn) {
-    return (
-      <div className="mx-auto max-w-md space-y-4 py-16 text-center">
-        <span className="text-5xl">\u{1F33F}</span>
-        <p className="text-xl font-bold text-textPrimary">Venda seus produtos na feira</p>
-        <p className="text-textSecondary">Entre com seu WhatsApp para cadastrar produtos e come\u{00E7}ar a vender.</p>
-        <Link href={`/login?redirect=${encodeURIComponent("/minha-banca")}`}>
-          <Button size="lg" className="mt-2">Entrar para vender</Button>
-        </Link>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -355,7 +352,7 @@ export default function MinhaBancaPage() {
                   {/* Botões de status */}
                   {order.status === "pending" && (
                     <div className="flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                      <Button size="lg" className="flex-1 py-3" onClick={() => updateOrderStatus(order.id, "confirmed")}>
                         🤝 Confirmar pedido
                       </Button>
                       <button
@@ -376,20 +373,20 @@ export default function MinhaBancaPage() {
                   {order.consumer_phone && (
                     <a
                       href={(() => {
-                        const pickup = { feira: "\u{1F3EA} Na feira", produtor: "\u{1F3E1} Buscar no produtor", entrega: "\u{1F697} Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
-                        const payment = { cash: "\u{1F4B5} Dinheiro", pix: "\u{1F4F2} Pix", card: "\u{1F4B3} Cart\u00e3o" }[order.payment_intent] ?? order.payment_intent;
+                        const pickup = { feira: "Na feira", produtor: "Buscar no produtor", entrega: "Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
+                        const payment = { cash: "Dinheiro", pix: "Pix", card: "Cartao" }[order.payment_intent] ?? order.payment_intent;
                         const msg = [
-                          `Ol\u00e1${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! \u{1F44B}`,
+                          `Ola${order.consumer_name ? `, *${order.consumer_name}*` : ""}!`,
                           ``,
                           `Sou *${producerCity || "produtor"}* do *Terra Viva*. Recebi seu pedido:`,
                           ``,
-                          `\u{1F6D2} *${order.product_name}*`,
-                          `\u{1F4E6} Quantidade: ${order.quantity}x`,
-                          `\u{1F4B0} Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
-                          `\u{1F4CD} Retirada: ${pickup}`,
-                          `${payment}`,
+                          `- *${order.product_name}*`,
+                          `- Quantidade: ${order.quantity}x`,
+                          `- Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
+                          `- Retirada: ${pickup}`,
+                          `- Pagamento: ${payment}`,
                           ``,
-                          `Vamos combinar os detalhes? \u{1F33F}`,
+                          `Vamos combinar os detalhes?`,
                         ].join("\n");
                         return `https://wa.me/55${order.consumer_phone!.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
                       })()}

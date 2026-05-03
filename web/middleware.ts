@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED = ["/pedidos", "/perfil"];
+const PROTECTED = ["/pedidos", "/perfil", "/minha-banca"];
 const PROTECTED_PATTERNS = [/^\/banca\/[^/]+\/reservar/];
 
 export function middleware(request: NextRequest) {

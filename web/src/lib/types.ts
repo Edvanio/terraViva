@@ -14,6 +14,7 @@ export interface Product {
 export interface Banca {
   id: string;
   user_id: string;
+  name?: string | null;
   bio: string;
   city: string;
   payment_methods: string[];

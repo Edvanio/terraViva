@@ -6,17 +6,13 @@ interface Props {
 }
 
 export const CATEGORIES = [
-  { value: "hortifruti", label: "Hortifruti", icon: "🥬" },
-  { value: "queijos", label: "Queijos", icon: "🧀" },
-  { value: "paes", label: "Pães", icon: "🥖" },
-  { value: "doces", label: "Doces", icon: "🍯" },
-  { value: "embutidos", label: "Embutidos", icon: "🥩" },
-  { value: "conservas", label: "Conservas", icon: "🫙" },
-  { value: "colonial", label: "Colonial", icon: "🫒" },
+  { value: "hortifruti", label: "Frutas e Verduras", icon: "🥬" },
+  { value: "padaria", label: "Pães e Doces", icon: "🥖" },
+  { value: "frios", label: "Queijos e Frios", icon: "🧀" },
+  { value: "carnes", label: "Carnes e Ovos", icon: "🥩" },
   { value: "bebidas", label: "Bebidas", icon: "🧉" },
-  { value: "ovos", label: "Ovos e Aves", icon: "🥚" },
-  { value: "artesanal", label: "Artesanal", icon: "🧶" },
-  { value: "temperos", label: "Temperos", icon: "🌿" },
+  { value: "temperos", label: "Temperos e Ervas", icon: "🌿" },
+  { value: "conservas", label: "Conservas e Mel", icon: "🍯" },
   { value: "outros", label: "Outros", icon: "📦" },
 ];
 
