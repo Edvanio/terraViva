@@ -9,6 +9,7 @@ import { formatPhone } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { ShareButton } from "@/components/ShareButton";
+import PhotoPickerPopup from "@/components/PhotoPickerPopup";
 import { clearSession } from "@/lib/clearSession";
 
 const PAYMENT_OPTIONS = [
@@ -69,9 +70,6 @@ function PerfilContent() {
   const { toast } = useToast();
   const [loaded, setLoaded] = useState(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
 
@@ -175,8 +173,7 @@ function PerfilContent() {
     return url as string;
   }
 
-  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function handleAvatarChange(file: File) {
     if (!file) return;
     setUploadingPhoto(true);
     try {
@@ -198,12 +195,10 @@ function PerfilContent() {
       toast(err instanceof Error ? err.message : "Erro ao enviar foto.", "error");
     } finally {
       setUploadingPhoto(false);
-      e.target.value = "";
     }
   }
 
-  async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function handleCoverChange(file: File) {
     if (!file) return;
     setUploadingCover(true);
     try {
@@ -225,7 +220,6 @@ function PerfilContent() {
       toast(err instanceof Error ? err.message : "Erro ao enviar capa.", "error");
     } finally {
       setUploadingCover(false);
-      e.target.value = "";
     }
   }
 
@@ -305,112 +299,92 @@ function PerfilContent() {
     <div className="mx-auto max-w-xl space-y-6">
 
       {/* ── FOTO DE CAPA ── */}
-      <div
-        className="relative h-36 w-full cursor-pointer overflow-hidden rounded-2xl shadow-card"
-        onClick={() => coverInputRef.current?.click()}
-      >
-        {form.cover_url ? (
-          <Image
-            src={form.cover_url}
-            alt="Foto de capa"
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, 576px"
-            unoptimized
-          />
-        ) : (
-          <div className="relative h-full w-full bg-gradient-to-br from-[#2d6b4f] via-[#3a7d5c] to-[#8fbc8f]">
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.3),transparent_50%),radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_50%)]" />
-            <div className="flex h-full w-full items-center justify-center gap-2 text-white/70">
-              <span className="text-3xl">🌿</span>
-              <span className="text-sm font-medium">Clique para adicionar foto de fundo</span>
-            </div>
-          </div>
-        )}
-
-        {/* Overlay escuro + ícone de câmera */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition hover:bg-black/25">
-          <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-medium text-textPrimary opacity-0 shadow transition hover:opacity-100 group-hover:opacity-100">
-            {uploadingCover ? "Enviando..." : "Alterar capa"}
-          </span>
-        </div>
-
-        {/* Botão sempre visível no canto */}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); coverInputRef.current?.click(); }}
-          className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-textPrimary shadow-sm transition hover:bg-white"
-          disabled={uploadingCover}
+      <PhotoPickerPopup onFileSelected={handleCoverChange} disabled={uploadingCover}>
+        <div
+          className="relative h-36 w-full cursor-pointer overflow-hidden rounded-2xl shadow-card"
         >
-          {uploadingCover ? (
-            <span className="animate-spin">⏳</span>
+          {form.cover_url ? (
+            <Image
+              src={form.cover_url}
+              alt="Foto de capa"
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, 576px"
+              unoptimized
+            />
           ) : (
-            <span>📷</span>
+            <div className="relative h-full w-full bg-gradient-to-br from-[#2d6b4f] via-[#3a7d5c] to-[#8fbc8f]">
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.3),transparent_50%),radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_50%)]" />
+              <div className="flex h-full w-full items-center justify-center gap-2 text-white/70">
+                <span className="text-3xl">🌿</span>
+                <span className="text-sm font-medium">Clique para adicionar foto de fundo</span>
+              </div>
+            </div>
           )}
-          {uploadingCover ? "Enviando..." : form.cover_url ? "Alterar capa" : "Adicionar capa"}
-        </button>
 
-        <input
-          ref={coverInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleCoverChange}
-        />
-      </div>
+          {/* Overlay escuro + ícone de câmera */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition hover:bg-black/25">
+            <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-medium text-textPrimary opacity-0 shadow transition hover:opacity-100 group-hover:opacity-100">
+              {uploadingCover ? "Enviando..." : "Alterar capa"}
+            </span>
+          </div>
+
+          {/* Botão sempre visível no canto */}
+          <div
+            className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-textPrimary shadow-sm transition hover:bg-white"
+          >
+            {uploadingCover ? (
+              <span className="animate-spin">⏳</span>
+            ) : (
+              <span>📷</span>
+            )}
+            {uploadingCover ? "Enviando..." : form.cover_url ? "Alterar capa" : "Adicionar capa"}
+          </div>
+        </div>
+      </PhotoPickerPopup>
 
       {/* ── AVATAR + NOME ── */}
       <div className="flex items-end gap-4 -mt-8 px-2">
         {/* Avatar */}
         <div className="relative flex-shrink-0">
-          <div
-            className="relative h-20 w-20 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-primary shadow-card"
-            onClick={() => avatarInputRef.current?.click()}
-          >
-            {form.photo_url ? (
-              <Image
-                src={form.photo_url}
-                alt="Foto de perfil"
-                fill
-                className="object-cover"
-                sizes="80px"
-                unoptimized
-              />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-white">
-                {initial}
-              </span>
-            )}
+          <PhotoPickerPopup onFileSelected={handleAvatarChange} disabled={uploadingPhoto}>
+            <div
+              className="relative h-20 w-20 cursor-pointer overflow-hidden rounded-full border-4 border-white bg-primary shadow-card"
+            >
+              {form.photo_url ? (
+                <Image
+                  src={form.photo_url}
+                  alt="Foto de perfil"
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                  unoptimized
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-white">
+                  {initial}
+                </span>
+              )}
 
-            {/* Camera overlay no hover */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition hover:bg-black/40">
-              <span className="text-xl opacity-0 transition hover:opacity-100">📷</span>
-            </div>
-
-            {uploadingPhoto && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <span className="animate-spin text-white">⏳</span>
+              {/* Camera overlay no hover */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition hover:bg-black/40">
+                <span className="text-xl opacity-0 transition hover:opacity-100">📷</span>
               </div>
-            )}
-          </div>
+
+              {uploadingPhoto && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <span className="animate-spin text-white">⏳</span>
+                </div>
+              )}
+            </div>
+          </PhotoPickerPopup>
 
           {/* Botão de câmera fixo */}
-          <button
-            type="button"
-            onClick={() => avatarInputRef.current?.click()}
-            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-primary text-xs text-white shadow hover:bg-primary/90"
-            disabled={uploadingPhoto}
+          <div
+            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-primary text-xs text-white shadow"
           >
             📷
-          </button>
-
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleAvatarChange}
-          />
+          </div>
         </div>
 
         {/* Nome/cidade */}

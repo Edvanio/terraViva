@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
 import { AIProductModal } from "@/components/AIProductModal";
 import { ShareButton } from "@/components/ShareButton";
+import PhotoPickerPopup from "@/components/PhotoPickerPopup";
 import { parsePrice } from "@/lib/format";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { handleApiError } from "@/lib/clearSession";
@@ -85,7 +86,6 @@ export default function MinhaBancaPage() {
   const [newPhoto, setNewPhoto] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
   async function uploadProductPhoto(file: File) {
     setUploadingPhoto(true);
@@ -488,13 +488,6 @@ export default function MinhaBancaPage() {
 
               {/* Foto do produto */}
               <div>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadProductPhoto(f); }}
-                />
                 {newPhoto ? (
                   <div className="relative">
                     <Image
@@ -514,14 +507,15 @@ export default function MinhaBancaPage() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={uploadingPhoto}
-                    className="flex items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-textSecondary transition hover:border-primary hover:text-primary disabled:opacity-60"
-                  >
-                    📷 {uploadingPhoto ? "Enviando..." : "Adicionar foto"}
-                  </button>
+                  <PhotoPickerPopup onFileSelected={uploadProductPhoto} disabled={uploadingPhoto}>
+                    <button
+                      type="button"
+                      disabled={uploadingPhoto}
+                      className="flex items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-textSecondary transition hover:border-primary hover:text-primary disabled:opacity-60"
+                    >
+                      📷 {uploadingPhoto ? "Enviando..." : "Adicionar foto"}
+                    </button>
+                  </PhotoPickerPopup>
                 )}
               </div>
 
