@@ -4,7 +4,7 @@ import Image from "next/image";
 import { getCategoryIcon } from "./CategoryChip";
 import { hexToRgba } from "@/lib/format";
 
-export function ProductCard({ product, bancaId }: { product: Product; bancaId: string }) {
+export function ProductCard({ product, bancaId, hasFair }: { product: Product; bancaId: string; hasFair?: boolean }) {
   const hasPhoto = Boolean(product.photo_url && product.photo_url.trim());
 
   const cardStyle = product.color_primary
@@ -22,7 +22,7 @@ export function ProductCard({ product, bancaId }: { product: Product; bancaId: s
 
   return (
     <Link
-      href={`/banca/${bancaId}/reservar?productId=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}`}
+      href={`/banca/${bancaId}/reservar?productId=${product.id}&name=${encodeURIComponent(product.name)}&price=${product.price}${product.unit ? `&unit=${product.unit}` : ""}${hasFair ? "&hasFair=1" : ""}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
       style={cardStyle}
     >

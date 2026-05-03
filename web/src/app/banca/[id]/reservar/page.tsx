@@ -26,9 +26,11 @@ export default function ReservarPage() {
   const productId = useMemo(() => searchParams.get("productId") || "", [searchParams]);
   const productName = useMemo(() => searchParams.get("name") || "Produto", [searchParams]);
   const productPrice = useMemo(() => parseFloat(searchParams.get("price") || "0"), [searchParams]);
+  const productUnit = useMemo(() => searchParams.get("unit") || null, [searchParams]);
+  const hasFair = useMemo(() => searchParams.get("hasFair") === "1", [searchParams]);
 
   const [quantity, setQuantity] = useState(1);
-  const [pickupLocation, setPickupLocation] = useState<"feira" | "produtor" | "entrega">("feira");
+  const [pickupLocation, setPickupLocation] = useState<"feira" | "produtor" | "entrega">("produtor");
   const [paymentIntent, setPaymentIntent] = useState<"cash" | "pix" | "card">("cash");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +139,7 @@ export default function ReservarPage() {
     >
       <div>
         <h1 className="font-display text-2xl font-bold text-textPrimary">Finalizar pedido</h1>
-        <p className="mt-1 text-sm text-textSecondary">{productName}</p>
+        <p className="mt-1 text-sm text-textSecondary">{productName}{productUnit && <span className="text-xs text-textSecondary"> ({productUnit})</span>}</p>
       </div>
 
       {/* Quantidade */}
@@ -163,7 +165,7 @@ export default function ReservarPage() {
           </button>
           {totalPrice > 0 && (
             <span className="ml-auto text-lg font-bold text-primary">
-              R$ {totalPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              R$ {totalPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}{productUnit && <span className="text-sm font-semibold text-textSecondary">/{productUnit}</span>}
             </span>
           )}
         </div>
@@ -175,7 +177,7 @@ export default function ReservarPage() {
           Como quer receber?
         </label>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {PICKUP_OPTS.map((opt) => (
+          {PICKUP_OPTS.filter((opt) => hasFair || opt.value !== "feira").map((opt) => (
             <button
               key={opt.value}
               type="button"

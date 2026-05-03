@@ -27,6 +27,7 @@ export interface Banca {
   gallery?: string[];
   address?: string | null;
   pix_key?: string | null;
+  fair_location?: string | null;
   products?: Product[];
 }
 
@@ -55,6 +56,7 @@ export interface Reservation {
   product_photo_url?: string | null;
   product_description?: string | null;
   product_category?: string | null;
+  product_unit?: string | null;
   consumer_name?: string | null;
   consumer_phone?: string | null;
   producer_name?: string | null;

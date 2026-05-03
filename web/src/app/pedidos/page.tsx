@@ -114,7 +114,7 @@ export default function PedidosPage() {
 
               {/* Preço destaque */}
               <p className="mt-2 text-xl font-bold text-primary">
-                R$ {order.total_price.toFixed(2)}
+                R$ {order.total_price.toFixed(2)}{order.product_unit && <span className="text-sm font-semibold text-textSecondary">/{order.product_unit}</span>}
                 <span className="ml-1.5 text-sm font-normal text-textSecondary">{order.quantity}x</span>
               </p>
 

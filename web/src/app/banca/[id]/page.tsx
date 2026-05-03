@@ -133,7 +133,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
       ) : (
         <section className="grid gap-5 sm:grid-cols-2">
           {(banca.products || []).map((product) => (
-            <ProductCard key={product.id} product={product} bancaId={banca.id} />
+            <ProductCard key={product.id} product={product} bancaId={banca.id} hasFair={Boolean(banca.fair_location)} />
           ))}
         </section>
       )}
