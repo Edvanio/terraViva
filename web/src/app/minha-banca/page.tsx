@@ -12,6 +12,8 @@ import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
 import { AIProductModal } from "@/components/AIProductModal";
 import { ShareButton } from "@/components/ShareButton";
 import { parsePrice } from "@/lib/format";
+import { useAuthGuard } from "@/lib/useAuthGuard";
+import { handleApiError } from "@/lib/clearSession";
 
 interface Order {
   id: string;
@@ -60,12 +62,12 @@ const PAYMENT_LABEL: Record<string, string> = {
 };
 
 export default function MinhaBancaPage() {
+  const { ready } = useAuthGuard();
   const router = useRouter();
   const [tab, setTab] = useState<"orders" | "products">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [producerCity, setProducerCity] = useState<string>("");
   const [producerName, setProducerName] = useState<string>("");
   const [bancaShortCode, setBancaShortCode] = useState<string | null>(null);
@@ -109,17 +111,15 @@ export default function MinhaBancaPage() {
 
   async function loadData() {
     const token = getToken();
-    if (!token) {
-      router.replace(`/login?redirect=${encodeURIComponent("/minha-banca")}`);
-      return;
-    }
-    setIsLoggedIn(true);
+    if (!token) return;
 
     const [ordersRes, productsRes, profileRes] = await Promise.all([
       fetch(`${base}/reservations/producer`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${base}/products/mine`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${base}/producer/profile`, { headers: { Authorization: `Bearer ${token}` } }),
     ]);
+
+    if (handleApiError(profileRes) || handleApiError(ordersRes) || handleApiError(productsRes)) return;
 
     if (profileRes.ok) {
       const profile = await profileRes.json();
@@ -140,7 +140,7 @@ export default function MinhaBancaPage() {
     setLoading(false);
   }
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (ready) loadData(); }, [ready]);
 
   async function updateOrderStatus(orderId: string, status: Order["status"]) {
     const token = getToken();
@@ -244,7 +244,7 @@ export default function MinhaBancaPage() {
     );
   }
 
-  if (!isLoggedIn) {
+  if (!ready) {
     return null;
   }
 

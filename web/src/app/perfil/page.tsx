@@ -9,6 +9,7 @@ import { formatPhone } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
 import { useAuthGuard } from "@/lib/useAuthGuard";
 import { ShareButton } from "@/components/ShareButton";
+import { clearSession } from "@/lib/clearSession";
 
 const PAYMENT_OPTIONS = [
   { value: "cash", label: "💵 Dinheiro" },
@@ -90,6 +91,7 @@ function PerfilContent() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(async (res) => {
+        if (res.status === 401) { clearSession(); return; }
         if (res.status === 404) {
           setForm({ ...EMPTY, phone: formatPhone(getPhoneFromToken(token)) });
           setIsNew(true);
