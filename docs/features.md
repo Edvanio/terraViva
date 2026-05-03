@@ -98,23 +98,37 @@
 
 ---
 
-### 6. Perfil do Usuário
+### 6. Perfil do Usuário (Auto-Save)
 
-**Descrição**: Tela onde o usuário configura nome, telefone, endereço e se promove a produtor.
+**Descrição**: Tela onde o usuário configura nome, endereço, cidade, bio e formas de pagamento. **Salva automaticamente** com debounce de 1.5s após qualquer edição — sem botão "Salvar". Fotos de perfil/capa são persistidas imediatamente após upload. Cidade/Estado é auto-detectada via geocode (OpenAI) a partir do endereço.
 
 **Componentes Envolvidos**:
-- `web/src/app/perfil/page.tsx` — Formulário de perfil
-- `backend/routers/producers.py` — Criar/editar perfil de produtor
+- `web/src/app/perfil/page.tsx` — Formulário com auto-save (Suspense + useSearchParams)
+- `backend/routers/producers.py` — `PUT /producer/profile`
+- `backend/routers/producers.py` — `POST /producer/geocode` (extrai cidade do endereço)
+- `backend/routers/producers.py` — `POST /producer/upload` (foto → DO Spaces)
+
+**Campos**: Nome (obrigatório), Endereço (obrigatório), Cidade/Estado (read-only, auto), Bio, Telefone (locked), Formas de pagamento (cash/pix/card)
 
 ---
 
 ### 7. Comunicação WhatsApp
 
-**Descrição**: Links `wa.me` com mensagens pré-formatadas para contato direto entre produtor e consumidor sobre pedidos.
+**Descrição**: Links `wa.me` com mensagens pré-formatadas (texto puro, sem emojis — para evitar problemas de encoding) para contato direto entre produtor e consumidor sobre pedidos. Inclui nome da pessoa quando disponível.
 
 **Componentes Envolvidos**:
 - `web/src/app/pedidos/page.tsx` — Consumidor → Produtor
 - `web/src/app/minha-banca/page.tsx` — Produtor → Consumidor
+
+**Formato da mensagem**:
+```
+Ola, *Nome*!
+- *Produto*
+- Quantidade: Nx
+- Total: *R$ X,XX*
+- Retirada: Na feira
+- Pagamento: Dinheiro
+```
 
 ---
 

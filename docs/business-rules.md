@@ -42,7 +42,7 @@
 
 ### 5. Usuário é criado automaticamente no primeiro login
 
-**Descrição**: Se o telefone não existe em `users`, é criado com `role: "consumer"` no momento do `verify-otp`.
+**Descrição**: Se o telefone não existe em `users`, é criado no momento do `verify-otp`.
 
 **Justificativa**: Zero fricção — não há cadastro separado. Qualquer pessoa com WhatsApp pode usar.
 
@@ -58,13 +58,13 @@
 
 ---
 
-### 7. Perfil de produtor é separado do usuário
+### 7. Perfil unificado na collection users
 
-**Descrição**: Existe uma coleção `producers` separada de `users`. Um `user` com `role: "producer"` precisa ter uma entrada correspondente em `producers` para funcionar.
+**Descrição**: Não existe collection `producers` separada. Todo perfil (nome, bio, cidade, foto, pagamento, endereço) é salvo diretamente no documento da collection `users`. Qualquer usuário vira "produtor" automaticamente ao cadastrar pelo menos 1 produto.
 
-**Justificativa**: Permite enriquecer o perfil do produtor (bio, cidade, foto, métodos de pagamento, pix, endereço) sem poluir a coleção de usuários.
+**Justificativa**: Simplifica UX — sem barreiras de role ou "se tornar produtor". Basta ter produto ativo.
 
-**Implicação**: A migração `POST /producer/migrate-from-users` cria entradas em `producers` para usuários com `role: "producer"` que não tenham perfil.
+**Implementação**: `backend/routers/producers.py` — `PUT /producer/profile` atualiza direto em `db.users`.
 
 ---
 
@@ -131,12 +131,25 @@ categories = list({p.get("category") for p in products if p.get("category")})
 ```
 Calculado dinamicamente a partir dos produtos ativos — não é campo persistido.
 
+**Categorias disponíveis (8)**:
+| value | label |
+|-------|-------|
+| `hortifruti` | Frutas e Verduras |
+| `padaria` | Pães e Doces |
+| `frios` | Queijos e Frios |
+| `carnes` | Carnes e Ovos |
+| `bebidas` | Bebidas |
+| `temperos` | Temperos e Ervas |
+| `conservas` | Conservas e Mel |
+| `outros` | Outros |
+
 ## Regras de Domínio
 
-### Roles
-- `consumer` — Pode reservar produtos e ver pedidos
-- `producer` — Pode tudo do consumer + gerenciar banca/produtos + ver pedidos recebidos
-- `admin` — Pode gerenciar configuração da feira (`fair_config`)
+### Sem Roles Explícitos
+- Não há conceito de roles (consumer/producer/admin)
+- Qualquer usuário pode comprar (reservar produtos)
+- Qualquer usuário se torna "produtor" ao ter ≥1 produto ativo
+- Não há aprovação ou barreira para vender
 
 ### Pickup Locations
 - `feira` — Retirada na feira (local padrão)

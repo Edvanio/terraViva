@@ -70,7 +70,6 @@ Retorna dados do usuário logado.
 {
   "id": "6651a...",
   "phone": "48999110001",
-  "role": "producer",
   "name": "João da Horta",
   "created_at": "2024-05-01T10:00:00Z"
 }
@@ -298,43 +297,36 @@ Retorna perfil do produtor logado.
 
 ---
 
-#### POST /producer/profile
-Cria perfil de produtor.
+#### PUT /producer/profile
+Atualiza perfil (campos parciais). Auto-save do frontend envia a cada 1.5s após edição.
+
+**Auth**: Requerida
+
+---
+
+#### POST /producer/geocode
+Extrai cidade/estado a partir de um endereço via OpenAI.
 
 **Auth**: Requerida
 
 **Body**:
 ```json
-{
-  "bio": "Produtor de hortaliças orgânicas",
-  "city": "Sao Ludgero",
-  "phone": "48999110001",
-  "payment_methods": ["cash", "pix"]
-}
+{ "address": "Rua X, 123, São Ludgero" }
+```
+
+**Resposta 200**:
+```json
+{ "city": "São Ludgero - SC" }
 ```
 
 ---
 
-#### PUT /producer/profile
-Atualiza perfil (campos parciais).
-
-**Auth**: Requerida
-
----
-
 #### POST /producer/upload
-Upload de foto de perfil.
+Upload de foto de perfil ou capa.
 
 **Auth**: Requerida
 **Content-Type**: `multipart/form-data`
 **Limite**: 5MB, formatos: jpeg/png/webp/gif
-
----
-
-#### POST /producer/migrate-from-users
-Migração: cria perfil em `producers` para usuários com `role=producer` que não têm perfil. Idempotente.
-
-**Auth**: Nenhuma (endpoint administrativo)
 
 ---
 
@@ -380,7 +372,6 @@ Retorna configuração ativa da feira para a cidade.
 |--------|-------------|
 | 400 | Validação falhou (ex: cancelar reserva não-pending) |
 | 401 | Token ausente, inválido ou expirado |
-| 403 | Role insuficiente (ex: consumer tentando acessar admin) |
 | 404 | Recurso não encontrado |
 | 409 | Conflito (ex: perfil de produtor já existe) |
 | 413 | Arquivo muito grande (> 5MB) |
