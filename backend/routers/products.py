@@ -52,7 +52,20 @@ def create_product(payload: ProductCreate, user: dict = Depends(get_current_user
     db = get_db()
     producer = db.producers.find_one({"user_id": user["_id"]})
     if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
+        # Auto-cria perfil de produtor na primeira vez
+        result = db.producers.insert_one({
+            "user_id": user["_id"],
+            "bio": "",
+            "city": "",
+            "phone": user.get("phone", ""),
+            "payment_methods": ["cash"],
+            "photo_url": None,
+            "cover_url": None,
+            "gallery": [],
+            "pix_key": None,
+            "address": None,
+        })
+        producer = db.producers.find_one({"_id": result.inserted_id})
 
     document = payload.model_dump()
     _validate_colors(document)

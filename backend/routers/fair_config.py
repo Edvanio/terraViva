@@ -2,7 +2,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 
 from database import get_db
-from dependencies import require_role
+from dependencies import get_current_user
 from models import FairConfigCreate, FairConfigResponse, FairConfigUpdate
 
 router = APIRouter()
@@ -36,7 +36,7 @@ def get_fair_config(city: str):
 
 
 @router.post("", response_model=FairConfigResponse)
-def create_fair_config(payload: FairConfigCreate, user: dict = Depends(require_role("admin"))):
+def create_fair_config(payload: FairConfigCreate, user: dict = Depends(get_current_user)):
     db = get_db()
     document = payload.model_dump()
     result = db.fair_configs.insert_one(document)
@@ -48,7 +48,7 @@ def create_fair_config(payload: FairConfigCreate, user: dict = Depends(require_r
 def update_fair_config(
     config_id: str,
     payload: FairConfigUpdate,
-    user: dict = Depends(require_role("admin")),
+    user: dict = Depends(get_current_user),
 ):
     db = get_db()
     item = db.fair_configs.find_one({"_id": ObjectId(config_id)})

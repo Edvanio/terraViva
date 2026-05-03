@@ -24,10 +24,10 @@ def generate_otp() -> str:
     return f"{random.randint(0, 999999):06d}"
 
 
-def create_access_token(subject: str, role: str, phone: str = "") -> str:
+def create_access_token(subject: str, phone: str = "") -> str:
     settings = get_settings()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": subject, "role": role, "phone": phone, "exp": expires_at}
+    payload = {"sub": subject, "phone": phone, "exp": expires_at}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 

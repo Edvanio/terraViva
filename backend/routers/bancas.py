@@ -10,21 +10,31 @@ router = APIRouter()
 @router.get("", response_model=list[BancaResponse])
 def list_bancas():
     db = get_db()
-    bancas = list(db.producers.find())
+    # Busca todos os produtos ativos agrupados por producer_id
+    active_products = list(db.products.find({"is_active": True}))
+    # Agrupa por producer_id
+    products_by_producer = {}
+    for p in active_products:
+        pid = p["producer_id"]
+        products_by_producer.setdefault(pid, []).append(p)
+
     result = []
-    for item in bancas:
-        products = list(db.products.find({"producer_id": item["_id"], "is_active": True}))
-        if not products:
-            continue  # só aparece quem tem produto ativo
+    for producer_id, products in products_by_producer.items():
+        producer = db.producers.find_one({"_id": producer_id})
+        if not producer:
+            continue
+        # Busca nome do user
+        user = db.users.find_one({"_id": producer["user_id"]})
         categories = list({p.get("category") for p in products if p.get("category")})
         result.append(BancaResponse(
-            id=str(item["_id"]),
-            user_id=str(item["user_id"]),
-            bio=item.get("bio", ""),
-            city=item.get("city", ""),
-            payment_methods=item.get("payment_methods", ["cash"]),
-            photo_url=item.get("photo_url"),
-            cover_url=item.get("cover_url"),
+            id=str(producer_id),
+            user_id=str(producer["user_id"]),
+            name=user.get("name") if user else None,
+            bio=producer.get("bio", ""),
+            city=producer.get("city", ""),
+            payment_methods=producer.get("payment_methods", ["cash"]),
+            photo_url=producer.get("photo_url"),
+            cover_url=producer.get("cover_url"),
             categories=categories,
             products_count=len(products),
         ))

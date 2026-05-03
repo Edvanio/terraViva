@@ -3,14 +3,13 @@ from datetime import datetime, timezone
 from database import get_db
 
 
-def upsert_user(db, phone: str, role: str, name: str):
+def upsert_user(db, phone: str, name: str):
     existing = db.users.find_one({"phone": phone})
     if existing:
         return existing
     result = db.users.insert_one(
         {
             "phone": phone,
-            "role": role,
             "name": name,
             "created_at": datetime.now(timezone.utc),
         }
@@ -84,12 +83,12 @@ def ensure_fair_config(db):
 def main():
     db = get_db()
 
-    producer1 = upsert_user(db, "48999110001", "producer", "Joao da Horta")
-    producer2 = upsert_user(db, "48999110002", "producer", "Maria da Colonia")
+    producer1 = upsert_user(db, "48999110001", "Joao da Horta")
+    producer2 = upsert_user(db, "48999110002", "Maria da Colonia")
 
-    upsert_user(db, "48999110011", "consumer", "Carlos")
-    upsert_user(db, "48999110012", "consumer", "Ana")
-    upsert_user(db, "48999110013", "consumer", "Paulo")
+    upsert_user(db, "48999110011", "Carlos")
+    upsert_user(db, "48999110012", "Ana")
+    upsert_user(db, "48999110013", "Paulo")
 
     profile1 = ensure_producer_profile(db, producer1["_id"], "Banca de verduras frescas", "Sao Ludgero", producer1["phone"])
     profile2 = ensure_producer_profile(db, producer2["_id"], "Produtos coloniais artesanais", "Sao Ludgero", producer2["phone"])

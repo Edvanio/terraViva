@@ -51,14 +51,13 @@ def verify_otp(payload: OtpVerify):
         result = db.users.insert_one(
             {
                 "phone": phone,
-                "role": "consumer",
                 "name": None,
                 "created_at": datetime.now(timezone.utc),
             }
         )
         user = db.users.find_one({"_id": result.inserted_id})
 
-    token = create_access_token(str(user["_id"]), user["role"], phone=user["phone"])
+    token = create_access_token(str(user["_id"]), phone=user["phone"])
     return TokenResponse(access_token=token)
 
 
@@ -67,7 +66,6 @@ def get_me(user: dict = Depends(get_current_user)):
     return UserResponse(
         id=str(user["_id"]),
         phone=user["phone"],
-        role=user["role"],
         name=user.get("name"),
         created_at=user["created_at"],
     )

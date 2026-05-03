@@ -1,12 +1,11 @@
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field
 
 
 class OtpRequest(BaseModel):
     phone: str
-    role: Literal["consumer", "producer", "admin"] = "consumer"
 
 
 class OtpVerify(BaseModel):
@@ -22,7 +21,6 @@ class TokenResponse(BaseModel):
 class UserResponse(BaseModel):
     id: str
     phone: str
-    role: Literal["consumer", "producer", "admin"]
     name: Optional[str] = None
     created_at: datetime
 
@@ -30,6 +28,7 @@ class UserResponse(BaseModel):
 class BancaResponse(BaseModel):
     id: str
     user_id: str
+    name: Optional[str] = None
     bio: str
     city: str
     payment_methods: list[str]

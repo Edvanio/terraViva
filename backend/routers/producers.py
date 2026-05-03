@@ -175,33 +175,4 @@ async def upload_photo(
     return {"url": public_url}
 
 
-@router.post("/migrate-from-users")
-def migrate_producers_from_users():
-    """
-    Migração única: cria entradas em `producers` para todos os usuários com
-    role='producer' que ainda não têm perfil. Seguro chamar múltiplas vezes (idempotente).
-    """
-    db = get_db()
-    producer_users = list(db.users.find({"role": "producer"}))
-    created = 0
-    skipped = 0
-    for u in producer_users:
-        existing = db.producers.find_one({"user_id": u["_id"]})
-        if existing:
-            skipped += 1
-            continue
-        db.producers.insert_one({
-            "user_id": u["_id"],
-            "bio": "",
-            "city": "",
-            "phone": u.get("phone", ""),
-            "payment_methods": ["cash"],
-            "photo_url": None,
-            "cover_url": None,
-            "gallery": [],
-            "pix_key": None,
-            "address": None,
-            "created_at": datetime.now(timezone.utc),
-        })
-        created += 1
-    return {"migrated": created, "already_existed": skipped, "total_producer_users": len(producer_users)}
+
