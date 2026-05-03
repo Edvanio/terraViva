@@ -497,9 +497,11 @@ function PerfilContent() {
               )}
               {geoLoading ? "Buscando..." : "Usar minha localização"}
             </button>
-            {(geoHint?.city || geoHint?.state) && (
+            {(geoHint?.city || geoHint?.state || form.city) && (
               <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                {geoHint.city ?? "Cidade"}{geoHint.state ? `, ${geoHint.state}` : ""}
+                {geoHint
+                  ? `${geoHint.city ?? "Cidade"}${geoHint.state ? `, ${geoHint.state}` : ""}`
+                  : form.city}
               </span>
             )}
           </div>
