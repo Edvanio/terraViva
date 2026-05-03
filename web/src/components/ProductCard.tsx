@@ -7,17 +7,30 @@ import { hexToRgba } from "@/lib/format";
 export function ProductCard({ product, bancaId, hasFair }: { product: Product; bancaId: string; hasFair?: boolean }) {
   const hasPhoto = Boolean(product.photo_url && product.photo_url.trim());
 
-  const cardStyle = product.color_primary
-    ? {
-        borderColor: hexToRgba(product.color_primary, 0.3),
-      }
+  const cp = product.color_primary;
+  const ca = product.color_accent;
+
+  const cardStyle = cp
+    ? { borderColor: hexToRgba(cp, 0.25) }
     : undefined;
 
-  const categoryStyle = product.color_accent
-    ? {
-        backgroundColor: hexToRgba(product.color_accent, 0.12),
-        color: product.color_accent,
-      }
+  // Linha colorida no topo do card
+  const topBarStyle = cp
+    ? { background: cp }
+    : undefined;
+
+  const categoryStyle = ca
+    ? { backgroundColor: hexToRgba(ca, 0.12), color: ca }
+    : undefined;
+
+  // CTA button usa color_primary ou fallback para a classe padrão
+  const ctaBg = cp
+    ? { backgroundColor: cp, color: "#fff" }
+    : undefined;
+
+  // Preço usa color_accent suave como fundo
+  const priceStyle = ca
+    ? { backgroundColor: hexToRgba(ca, 0.12), color: ca }
     : undefined;
 
   return (
@@ -26,6 +39,8 @@ export function ProductCard({ product, bancaId, hasFair }: { product: Product; b
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition hover:-translate-y-1 hover:shadow-card-hover"
       style={cardStyle}
     >
+      {/* Linha de cor no topo */}
+      {topBarStyle && <span className="block h-1 w-full" style={topBarStyle} />}
       {/* Imagem grande em cima */}
       <div className="relative h-40 w-full overflow-hidden bg-earth-subtle">
         {hasPhoto ? (
@@ -57,8 +72,11 @@ export function ProductCard({ product, bancaId, hasFair }: { product: Product; b
         <div>
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-base font-bold leading-tight text-textPrimary">{product.name}</h4>
-            <strong className="flex-shrink-0 rounded-lg bg-primary-subtle px-2 py-0.5 text-lg font-extrabold text-primary">
-              R$ {product.price.toFixed(2)}{product.unit && <span className="text-xs font-semibold text-textSecondary">/{product.unit}</span>}
+            <strong
+              className="flex-shrink-0 rounded-lg px-2 py-0.5 text-lg font-extrabold"
+              style={priceStyle ?? { backgroundColor: "var(--color-primary-subtle)", color: "var(--color-primary)" }}
+            >
+              R$ {product.price.toFixed(2)}{product.unit && <span className="text-xs font-semibold opacity-70">/{product.unit}</span>}
             </strong>
           </div>
           <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-textSecondary">
@@ -66,9 +84,12 @@ export function ProductCard({ product, bancaId, hasFair }: { product: Product; b
           </p>
         </div>
         <div className="mt-4">
-          <span className="flex w-full items-center justify-center rounded-xl bg-primary py-2 text-sm font-bold text-white group-hover:bg-primary-dark transition-colors">
-            🌿 Pedir
-          </span>
+          <span
+              className="flex w-full items-center justify-center rounded-xl py-3 text-base font-bold text-white transition-opacity group-hover:opacity-90"
+              style={ctaBg ?? { backgroundColor: "var(--color-primary)" }}
+            >
+              🛒 Quero esse!
+            </span>
         </div>
       </div>
     </Link>

@@ -142,6 +142,34 @@ def update_reservation_status(
         {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc)}},
     )
     updated = db.reservations.find_one({"_id": reservation["_id"]})
+
+    # Notifica o consumidor quando o produtor confirma o pedido
+    if payload.status == "confirmed":
+        consumer = db.users.find_one({"_id": reservation["consumer_id"]})
+        producer_name = user.get("name") or "Produtor"
+        product_name = reservation.get("product_name", "produto")
+        # Grava notificação para polling web
+        db.notifications.insert_one({
+            "user_id": reservation["consumer_id"],
+            "type": "order_confirmed",
+            "title": "Pedido confirmado! 🎉",
+            "body": f"{producer_name} confirmou seu pedido de {product_name}.",
+            "reservation_id": reservation["_id"],
+            "read": False,
+            "created_at": datetime.now(timezone.utc),
+        })
+        # Push para app mobile (fire-and-forget)
+        if consumer and consumer.get("expo_push_token"):
+            threading.Thread(
+                target=send_push_notification,
+                args=(
+                    consumer["expo_push_token"],
+                    "Pedido confirmado! 🎉",
+                    f"{producer_name} confirmou seu pedido de {product_name}.",
+                ),
+                daemon=True,
+            ).start()
+
     return _to_response(updated)
 
 

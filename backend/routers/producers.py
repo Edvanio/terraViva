@@ -65,6 +65,7 @@ def _to_response(user: dict) -> UserProfileResponse:
         pix_key=user.get("pix_key"),
         address=user.get("address"),
         fair_location=user.get("fair_location"),
+        badges=user.get("badges", []),
     )
 
 
