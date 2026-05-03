@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import useSWR from "swr";
 import { useAuthGuard } from "@/lib/useAuthGuard";
+import { clearSession } from "@/lib/clearSession";
 import type { Reservation } from "@/lib/types";
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 import { getCategoryIcon } from "@/components/CategoryChip";
@@ -15,6 +16,10 @@ const fetcher = async (url: string): Promise<Reservation[]> => {
       Authorization: `Bearer ${token}`,
     },
   });
+  if (response.status === 401) {
+    clearSession();
+    throw new Error("Sessão expirada");
+  }
   if (!response.ok) {
     throw new Error("Falha ao carregar pedidos");
   }

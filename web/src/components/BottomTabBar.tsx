@@ -15,7 +15,6 @@ const TABS_LOGGED = [
 const TABS_GUEST = [
   { href: "/", label: "In\u00edcio", icon: "\u{1F3E0}", activeIcon: "\u{1F3E1}" },
   { href: "/bancas", label: "Produtores", icon: "\u{1F331}", activeIcon: "\u{1F33F}" },
-  { href: "/minha-banca", label: "Vender", icon: "\u{1F33D}", activeIcon: "\u{1F33D}" },
   { href: "/login", label: "Entrar", icon: "\u{1F511}", activeIcon: "\u{1F511}" },
 ];
 
@@ -26,6 +25,17 @@ export function BottomTabBar() {
   useEffect(() => {
     setIsLoggedIn(!!localStorage.getItem("terra_viva_token"));
   }, [pathname]);
+
+  // Escuta mudanças no localStorage (logout em outra aba ou clearSession)
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key === "terra_viva_token") {
+        setIsLoggedIn(!!e.newValue);
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   const tabs = isLoggedIn ? TABS_LOGGED : TABS_GUEST;
 
