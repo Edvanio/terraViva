@@ -2,163 +2,160 @@
 
 ## Padrões Arquiteturais
 
-### Monorepo com Container Único
-O projeto adota monorepo com `backend/`, `web/`, `app/` e `shared/` na mesma árvore. O deploy gera um único container Docker que roda todos os serviços orquestrados por `entrypoint.sh`.
+### Router-based Domain Organization (Backend)
+O backend segue uma organização por **domínio de negócio** através de routers FastAPI:
 
-### API-First
-O backend é a fonte de verdade. Web e app são consumidores da mesma API REST. Tipos compartilhados em `shared/types/` garantem consistência.
-
-### Server-Side Rendering (SSR) + Client Components
-O Next.js usa App Router com Server Components para páginas públicas (bancas, home) e Client Components para páginas autenticadas (perfil, minha-banca, pedidos).
-
-## Organização de Código
-
-### Backend (`backend/`)
 ```
-backend/
-├── main.py           → App FastAPI, startup, routers
-├── config.py         → Settings (pydantic-settings + .env)
-├── database.py       → Conexão MongoDB (singleton)
-├── dependencies.py   → get_current_user (JWT decode)
-├── models.py         → Pydantic models (request/response)
-├── utils.py          → Helpers (OTP, JWT, phone, push)
-├── seed.py           → Dados de seed para dev
-├── routers/          → Endpoints agrupados por domínio
-│   ├── auth.py       → OTP request/verify
-│   ├── bancas.py     → Listagem pública de bancas
-│   ├── products.py   → CRUD de produtos
-│   ├── ai_products.py→ Geração de produto via IA
-│   ├── reservations.py → Pedidos (consumidor + produtor)
-│   ├── producers.py  → Perfil do produtor
-│   └── fair_config.py→ Config da feira
-└── services/
-    └── openai_service.py → Integração OpenAI (vision + image)
+backend/routers/
+├── auth.py          → Autenticação (OTP + JWT)
+├── bancas.py        → Vitrine pública de produtores
+├── products.py      → CRUD de produtos
+├── ai_products.py   → Cadastro inteligente via IA
+├── reservations.py  → Gestão de pedidos (fluxo de status)
+├── notifications.py → Notificações in-app
+├── reviews.py       → Avaliações pós-compra
+├── producers.py     → Perfil do produtor
+└── fair_config.py   → Configuração da feira
 ```
 
-### Web (`web/src/`)
-```
-web/src/
-├── app/              → App Router (pages + API routes)
-│   ├── page.tsx      → Home (SSR)
-│   ├── bancas/       → Listagem de bancas (SSR)
-│   ├── banca/[id]/   → Detalhe + reservar
-│   ├── login/        → Auth OTP
-│   ├── minha-banca/  → Painel do produtor (CSR)
-│   ├── pedidos/      → Pedidos do consumidor (CSR)
-│   ├── perfil/       → Perfil do produtor (CSR)
-│   └── api/auth/     → API routes (cookie session)
-├── components/       → Componentes reutilizáveis
-├── lib/              → Utilitários (api, auth, types, hooks)
-└── styles/           → CSS global
-```
+### App Router (Web)
+Next.js 15 com App Router — separação clara entre:
+- **Server Components** (SSR): Páginas públicas (home, bancas, banca/[id])
+- **Client Components** ('use client'): Páginas protegidas e interativas
 
-### App (`app/src/`)
-```
-app/src/
-├── screens/          → Telas (auth, consumer, producer)
-├── navigation/       → React Navigation (tabs + stack)
-├── components/       → Componentes compartilhados
-├── context/          → AuthContext, TenantContext
-├── services/         → API client, auth, sync
-├── storage/          → Cache offline, queue
-└── theme/            → Design tokens
-```
+### Stack Navigation + Bottom Tabs (Mobile)
+React Navigation com:
+- **Stack** (raiz): Auth flow → Main tabs
+- **Bottom Tabs**: Consumer mode / Producer mode
+- **Context Providers**: AuthContext + TenantContext
 
 ## Padrões de Código
 
+### Dependency Injection (Backend)
+```python
+# get_current_user como dependência FastAPI
+@router.post("/")
+async def create(payload: Model, user=Depends(get_current_user), db=Depends(get_db)):
+    ...
+```
+
+### Repository Pattern (implícito)
+Queries MongoDB diretas nos routers (sem camada de repository separada) — o PyMongo atua como data access layer direto.
+
+### Fire-and-Forget (Notificações)
+```python
+# Notificações disparam em daemon threads — não bloqueiam a response
+threading.Thread(target=send_whatsapp, args=(phone, msg), daemon=True).start()
+```
+
+### Response Models (Serialização)
+Toda response é tipada via Pydantic BaseModel — garante contrato de API estável.
+
+### SWR Pattern (Web Client)
+```typescript
+// Fetch com cache, revalidação e deduplicação automática
+const { data } = useSWR('/api/endpoint', fetcher);
+```
+
+## Organização de Código
+
 ### Backend
+```
+backend/
+├── main.py          → App factory, middleware, startup hooks
+├── config.py        → Pydantic Settings (env vars)
+├── database.py      → Singleton MongoDB connection
+├── dependencies.py  → get_current_user (JWT decode)
+├── models.py        → Pydantic models (request/response)
+├── utils.py         → Helpers (push, whatsapp, short_code, geocoding)
+├── routers/         → Endpoints por domínio
+├── services/        → Lógica complexa (OpenAI)
+└── uploads/         → Volume compartilhado (imagens)
+```
 
-| Padrão | Uso |
-|--------|-----|
-| **Router pattern** | Cada domínio tem seu arquivo em `routers/` |
-| **Dependency Injection** | `Depends(get_current_user)` para autenticação |
-| **Response Models** | Pydantic models tipam todas as respostas |
-| **Singleton DB** | `get_db()` retorna mesma instância |
-| **Fire-and-forget** | Push notifications em thread daemon separada |
+### Web
+```
+web/src/
+├── app/             → Pages (App Router)
+│   ├── api/auth/    → Route handlers (session, logout)
+│   ├── banca/[id]/  → Detalhe + reserva
+│   ├── bancas/      → Lista pública
+│   ├── login/       → OTP login
+│   ├── minha-banca/ → Dashboard produtor
+│   ├── pedidos/     → Meus pedidos (consumidor)
+│   └── perfil/      → Edição de perfil
+├── components/      → Componentes reutilizáveis
+├── lib/             → Utilitários (api client, auth helpers)
+└── styles/          → CSS global
+```
 
-### Web (Next.js)
-
-| Padrão | Uso |
-|--------|-----|
-| **Server Components** | Páginas públicas (home, bancas, banca/[id]) |
-| **Client Components** | Páginas autenticadas ("use client") |
-| **Auth Guard hook** | `useAuthGuard()` — valida token + redireciona |
-| **SWR fetching** | Data fetching com cache/revalidation (pedidos) |
-| **API internal URL** | SSR usa `http://127.0.0.1:8000`, client usa `/api` |
-| **Cookie + localStorage** | Dual auth: cookie para SSR, localStorage para CSR |
-
-### Mobile (React Native)
-
-| Padrão | Uso |
-|--------|-----|
-| **Context API** | AuthContext para estado global de auth |
-| **Secure Store** | Token armazenado no keychain do dispositivo |
-| **Offline-first** | Queue de operações + cache local |
-| **Bottom Tabs** | Navegação principal por tabs (consumer/producer) |
+### Mobile
+```
+app/src/
+├── screens/         → Telas organizadas por papel
+│   ├── auth/        → Phone + OTP
+│   ├── consumer/    → Navegação e checkout
+│   └── producer/    → Catálogo e IA
+├── navigation/      → Navigators (Root, Consumer, Producer)
+├── context/         → State global (Auth, Tenant)
+├── services/        → API client, auth, sync
+├── storage/         → Cache local + fila offline
+├── components/      → Componentes compartilhados
+└── theme/           → Design tokens
+```
 
 ## Convenções de Nomenclatura
 
-| Entidade | Convenção | Exemplo |
-|----------|-----------|---------|
-| Arquivos Python | snake_case | `fair_config.py` |
-| Arquivos TS/TSX | PascalCase (componentes), camelCase (lib) | `BancaCard.tsx`, `api.ts` |
-| Rotas Next.js | kebab-case (pastas) | `minha-banca/`, `banca/[id]/` |
-| API endpoints | kebab-case | `/fair-config`, `/ai-generate` |
-| MongoDB collections | plural snake_case | `users`, `products`, `fair_configs` |
-| Env vars | UPPER_SNAKE_CASE | `MONGODB_URL`, `API_INTERNAL_URL` |
+| Escopo | Convenção | Exemplo |
+|--------|-----------|---------|
+| Routers (Python) | snake_case, plural | `reservations.py` |
+| Endpoints | REST (verbo HTTP + noun) | `POST /reservations`, `PATCH /reservations/{id}/status` |
+| Pages (Next.js) | kebab-case no path | `/minha-banca`, `/pedidos` |
+| Components (React) | PascalCase | `ProductCard.tsx` |
+| Funções helper | snake_case (Python) / camelCase (TS) | `send_whatsapp()`, `fetchWithAuth()` |
+| Variáveis de ambiente | UPPER_SNAKE_CASE | `ZAPI_INSTANCE_ID` |
+| Collections MongoDB | snake_case, plural | `otp_codes`, `fair_config` |
 
 ## Padrões de Autenticação
 
-```
-┌──────────┐   OTP request    ┌──────────┐
-│  Client  │ ──────────────── │ Backend  │
-│          │   phone number   │          │
-│          │ ◄──────────────  │          │
-│          │   dev_code (dev) │          │
-│          │                  │          │
-│          │   verify OTP     │          │
-│          │ ──────────────── │          │
-│          │   phone + code   │          │
-│          │ ◄──────────────  │          │
-│          │   JWT token      │          │
-└──────────┘                  └──────────┘
-      │
-      │ POST /api/auth/session {token}
-      ▼
-┌──────────┐
-│ Next.js  │ → Set httpOnly cookie (360 dias)
-│ API Route│
-└──────────┘
-```
+### Fluxo OTP
+1. Cliente envia phone → backend gera OTP (6 dígitos, TTL 5min)
+2. Cliente envia OTP → backend valida → gera JWT (360 dias)
+3. JWT armazenado em: cookie httpOnly (`terra_viva_token`) + localStorage
+
+### Proteção de Rotas
+- **Web**: middleware.ts redireciona para `/login` se sem cookie
+- **Mobile**: AuthContext verifica token no SecureStore
+- **Backend**: `Depends(get_current_user)` valida JWT em cada request protegida
 
 ## Padrões de Tratamento de Erros
 
-### Backend
-- HTTPException com status codes semânticos (400, 401, 404, 422, 503)
-- Timeout explícito para chamadas OpenAI (90s)
-- Logging via `print()` para erros de IA
+| Camada | Estratégia |
+|--------|-----------|
+| Backend | `HTTPException` com status code + detail message |
+| Web (SSR) | try/catch → fallback UI ou redirect |
+| Web (CSR) | SWR error state → toast notification |
+| Notificações | Fire-and-forget — falha silenciosa (não bloqueia UX) |
+| IA (OpenAI) | Timeout 90s → fallback para cadastro manual |
 
-### Web
-- `useAuthGuard` valida token e redireciona para `/login` se 401
-- `clearSession()` — utilitário que limpa localStorage + cookie + redireciona
-- `handleApiError(response)` — detecta 401 e limpa sessão automaticamente
-- Server Components: `.catch(() => null)` + `notFound()` para graceful degradation
-- Middleware protege rotas autenticadas no edge (verifica cookie)
+## Padrões de Estado (Pedidos)
 
-## Padrões de Estado (Web)
-
-| Tipo de página | Estratégia |
-|----------------|-----------|
-| Pública SSR | `apiGet()` no Server Component, `force-dynamic` |
-| Autenticada CSR | `useAuthGuard()` + `useState` + `fetch` em `useEffect` |
-| Lista com refresh | `useSWR` com token no header |
-| Formulários | `useState` + `onSubmit` handler |
-
-## Design System
-
-O projeto usa um design system customizado "orgânico" definido em `web/tailwind.config.ts`:
-- Paleta verde/terra (`primary`, `primary-dark`, `primary-subtle`)
-- Tipografia: `font-display` para títulos
-- Bordas arredondadas generosas (`rounded-2xl`, `rounded-3xl`)
-- Sombras suaves (`shadow-card`, `shadow-tab`)
-- Emojis como ícones em pontos de interface
+```
+                    ┌──────────┐
+           ┌───────│ pending  │───────┐
+           │       └──────────┘       │
+           ▼                          ▼
+    ┌────────────┐            ┌────────────┐
+    │ confirmed  │            │ cancelled  │
+    └─────┬──────┘            └────────────┘
+          │
+          ▼
+    ┌────────────┐
+    │ collected  │
+    └────────────┘
+          │
+          ▼
+    ┌────────────┐
+    │   fiado    │  (opcional — pagamento pendente)
+    └────────────┘
+```

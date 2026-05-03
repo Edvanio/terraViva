@@ -1,178 +1,128 @@
 # Regras de Negócio
 
-## Regras de Autenticação
+## RN-AUTH — Autenticação
 
 ### RN-AUTH-01: Login exclusivamente por OTP
-**Descrição**: Não existe senha. Todo login é feito por código OTP de 6 dígitos enviado ao telefone.  
-**Justificativa**: Público-alvo rural, pouco familiarizado com gestão de senhas.  
-**Implementação**: `backend/routers/auth.py`  
-**Validações**:
-- Telefone normalizado (apenas dígitos, mínimo 10)
-- OTP expira em 5 minutos (TTL index no MongoDB)
-- OTP gerado com `secrets.randbelow()` (criptograficamente seguro)
-- Em dev: aceita código fixo via `DEV_OTP_DEFAULT` (vazio em produção)
+- Não existe cadastro com senha. O login é feito por código de 6 dígitos.
+- Se o telefone não existir no banco, o usuário é criado automaticamente no primeiro login.
+- OTP expira em **5 minutos** (TTL index no MongoDB).
+- Em ambiente de desenvolvimento, o código fixo `123456` é aceito (via `DEV_OTP_DEFAULT`).
 
-### RN-AUTH-02: Criação automática de usuário
-**Descrição**: Se o telefone não existe no banco ao verificar OTP, o usuário é criado automaticamente.  
-**Justificativa**: Eliminação de fricção no cadastro. O mesmo usuário pode ser produtor (vender) e consumidor (comprar de outros produtores) simultaneamente.  
-**Implementação**: `backend/routers/auth.py` → `verify_otp()`
+### RN-AUTH-02: Sessão longa
+- JWT tem expiração de **360 dias** (6 meses).
+- Justificativa: usuários rurais acessam semanalmente (dia da feira) — re-login gera atrito.
+- Token armazenado em cookie httpOnly + localStorage (dual storage para SSR + CSR).
 
-### RN-AUTH-03: Sessão de longa duração
-**Descrição**: JWT e cookie duram 360 dias.  
-**Justificativa**: Público usa o app esporadicamente (1x/semana na feira). Re-login frequente causaria abandono.
+### RN-AUTH-03: Sem sistema de roles
+- O mesmo usuário pode ser produtor e consumidor simultaneamente.
+- Não existe campo `role`. A "role" é inferida: quem tem produtos cadastrados é produtor.
 
-### RN-AUTH-04: Dual-token (cookie + localStorage)
-**Descrição**: Token armazenado em cookie httpOnly (para SSR/middleware) E em localStorage (para client components).  
-**Justificativa**: Next.js Server Components precisam do cookie; Client Components precisam enviar header Authorization nas fetch requests.
+## RN-PROD — Produtos
 
----
+### RN-PROD-01: Preço obrigatório
+- Todo produto deve ter preço > 0.
+- O preço é definido pelo produtor e calculado server-side (quantidade × preço unitário).
 
-## Regras de Produtos
+### RN-PROD-02: Estoque opcional
+- Se `stock` for `null`, o produto tem estoque ilimitado.
+- Se `stock` for um número, é decrementado a cada reserva confirmada.
+- Produto com `stock = 0` não aparece como disponível.
 
-### RN-PROD-01: Produto pertence a um único produtor
-**Descrição**: `products.user_id` referencia o produtor dono.  
-**Validação**: Apenas o dono pode editar/excluir seus produtos.
+### RN-PROD-03: Ativo/Inativo
+- Produtor pode desativar produtos sem deletá-los (`active: false`).
+- Produtos inativos não aparecem na vitrine pública.
 
-### RN-PROD-02: Visibilidade via `is_active`
-**Descrição**: Produto com `is_active: false` não aparece nas bancas públicas.  
-**Uso**: Produtor marca como "esgotado" sem excluir.
+### RN-PROD-04: Categorias pré-definidas
+- Produtos são classificados em categorias (hortaliças, frutas, laticínios, panificados, etc.).
+- A IA sugere categoria automaticamente; produtor pode alterar.
 
-### RN-PROD-03: Estoque opcional
-**Descrição**: Campo `stock` pode ser `null` (estoque ilimitado) ou numérico.  
-**Implementação**: UI permite toggle entre "ilimitado" e quantidade específica.
+### RN-PROD-05: Cadastro por IA
+- Produtor envia foto → GPT-4o Vision retorna JSON com: name, description, category, suggested_price, colors.
+- O resultado é **sugestão editável** — produtor confirma ou altera antes de salvar.
+- Se IA falhar (timeout 90s / erro), o fluxo manual é oferecido como fallback.
 
-### RN-PROD-04: Categorias fixas
-**Descrição**: Lista pré-definida de categorias:
-- `hortifruti`, `queijos`, `paes`, `doces`, `embutidos`, `conservas`, `colonial`, `bebidas`, `ovos`, `artesanal`, `temperos`, `outros`
+## RN-BANCA — Vitrine
 
-**Implementação**: Validada no `openai_service.py` e no frontend.
+### RN-BANCA-01: Visibilidade pública
+- Bancas são listadas publicamente sem login.
+- Apenas produtores com **pelo menos 1 produto ativo** aparecem na listagem.
 
-### RN-PROD-05: IA sugere, produtor confirma
-**Descrição**: A geração por IA é apenas sugestão. O produtor pode editar todos os campos antes de salvar.  
-**Timeout**: 90 segundos para resposta da OpenAI.
+### RN-BANCA-02: Short code
+- Cada produtor recebe um código único de 5 caracteres alfanuméricos.
+- Gerado automaticamente no primeiro login (migration no startup).
+- Usado para URLs curtas compartilháveis (WhatsApp, redes sociais).
 
----
+### RN-BANCA-03: Personalização visual
+- Produtor pode definir cores da banca (cor primária) que são aplicadas nos botões da vitrine.
+- Se não definir, usa cor padrão do sistema (`bg-primary`).
 
-## Regras de Bancas
+## RN-RES — Reservas (Pedidos)
 
-### RN-BANCA-01: Banca = Produtor com produtos
-**Descrição**: Uma "banca" é a visualização pública de um usuário que possui pelo menos um produto (ativo ou não).  
-**Implementação**: `GET /bancas` filtra `users` que têm `products` com `is_active: true`.
-
-### RN-BANCA-02: Banca sem produtos é acessível
-**Descrição**: Se um produtor existe mas não tem produtos ativos, a banca é acessível via URL direta (mostra "nenhum produto disponível").  
-**Implementação**: `GET /bancas/{id}` não retorna 404 por falta de produtos.
-
-### RN-BANCA-03: Short code único
-**Descrição**: Cada usuário recebe um código de 5 caracteres (letras minúsculas + dígitos) gerado automaticamente.  
-**Validações**: Unicidade garantida por index unique + retry.  
-**Uso**: URL curta para compartilhamento.
-
----
-
-## Regras de Reservas
-
-### RN-RES-01: Apenas consumidor logado pode reservar
-**Descrição**: Endpoint protegido por JWT.  
-**Middleware**: `web/middleware.ts` protege `/banca/*/reservar`.
-
-### RN-RES-02: Status machine
-**Descrição**: Fluxo de estados da reserva:
+### RN-RES-01: Máquina de estados
 ```
-pending → confirmed → collected
-pending → cancelled (pelo consumidor)
-confirmed → cancelled (pelo produtor)
+pending → confirmed → collected → fiado (opcional)
+pending → cancelled (por produtor ou consumidor)
 ```
+- Apenas o **produtor** pode mover para `confirmed`, `collected` ou `fiado`.
+- **Consumidor** só pode cancelar enquanto status = `pending`.
+- **Produtor** pode cancelar em qualquer status exceto `collected`.
 
-### RN-RES-03: Somente `pending` pode ser cancelado pelo consumidor
-**Descrição**: Consumidor só cancela pedidos que ainda não foram confirmados pelo produtor.  
-**Implementação**: `PATCH /reservations/{id}/cancel` verifica `status == "pending"` e `consumer_id == user._id`.
+### RN-RES-02: Dados do pedido
+- Cada reserva armazena: `product_id`, `product_name`, `quantity`, `unit_price`, `total_price`, `pickup_location`, `payment_intent`.
+- Product name é denormalizado (snapshot no momento da reserva — não muda se produto for editado).
 
-### RN-RES-04: Somente produtor muda status para confirmed/collected
-**Descrição**: `PUT /reservations/{id}/status` verifica `producer_id == user._id`.
+### RN-RES-03: Local de retirada
+- Opções: `feira` (na feira física), `produtor` (buscar no local do produtor), `entrega` (entrega em domicílio).
+- A disponibilidade de cada opção depende da configuração do produtor.
 
-### RN-RES-05: Preço calculado no backend
-**Descrição**: `total_price = quantity × product.price` — calculado no momento da criação.  
-**Justificativa**: Evita manipulação de preço pelo frontend.
+### RN-RES-04: Forma de pagamento
+- Declaração de intenção: `pix`, `cash` (dinheiro), `card` (cartão).
+- **Não há cobrança automática** — é apenas indicativo para o produtor se preparar.
 
-### RN-RES-06: Notificação push ao produtor
-**Descrição**: Ao criar reserva, produtor recebe push notification via Expo.  
-**Implementação**: Thread daemon fire-and-forget (não bloqueia response).
+### RN-RES-05: Notificação em cada transição
+- Toda mudança de status dispara notificação ao interessado:
+  - Novo pedido → notifica produtor (push + WhatsApp)
+  - Confirmação/coleta/cancelamento → notifica consumidor (push + WhatsApp)
+  - Cancelamento pelo consumidor → notifica produtor
 
-### RN-RES-07: Sistema de Fiado
-**Descrição**: Produtor pode marcar um pedido como "fiado" — cliente leva o produto e paga depois.  
-**Status válidos**: `pending → confirmed → collected | cancelled | fiado`  
-**Regras**:
-- Qualquer pedido pode ser marcado como fiado pelo produtor (sem restrição de valor ou prazo)
-- Pedidos fiados aparecem na tab dedicada "Fiados" no painel do produtor
-- Do fiado, produtor pode marcar como "Pago" (collected) ou "Cancelar"
-- Decisão é 100% do produtor — sem automação de cobrança
+### RN-RES-06: Fiado
+- Status especial indicando "coletado mas não pago".
+- Apenas o produtor pode marcar como fiado.
+- Fica visível na aba "Fiados" do dashboard do produtor.
+- Não há cobrança automática — gestão manual pelo produtor.
 
-### RN-RES-08: Pagamento padrão Pix
-**Descrição**: Na tela de reserva, o método de pagamento padrão é "Pix" (não "Dinheiro").  
-**Justificativa**: Reflete o comportamento real dos consumidores da região.
+## RN-REVIEW — Avaliações
 
-### RN-RES-09: Nome obrigatório antes de reservar
-**Descrição**: Consumidor deve informar seu nome antes de fazer o primeiro pedido.  
-**Implementação**: `CustomerInfoPrompt` verifica se `user.name` é null ao montar a tela de reserva.
+### RN-REVIEW-01: Uma avaliação por pedido
+- Índice unique em `reservation_id` garante no máximo 1 review por reserva.
+- Apenas pedidos com status `collected` podem ser avaliados.
 
----
+### RN-REVIEW-02: Avaliação pública
+- Reviews são visíveis na vitrine da banca (públicas).
+- Campos: rating (1-5), comment (texto livre), consumer_name.
 
-## Regras da Feira
+## RN-FAIR — Configuração da Feira
 
-### RN-FEIRA-01: Configuração por cidade
-**Descrição**: Cada cidade tem sua configuração de feira (dia, horário, local, janela de pedidos).  
-**Implementação**: Collection `fair_configs` com filtro por `city` e `active: true`.
+### RN-FAIR-01: Documento singleton
+- Existe apenas um registro de configuração da feira no sistema (single-feira).
+- Contém: dias de funcionamento, horários, localização, janela de pedidos.
 
-### RN-FEIRA-02: Janela de pedidos
-**Descrição**: Pedidos só podem ser feitos dentro da janela definida (`order_window_open` / `order_window_close`).  
-**Implementação**: Frontend exibe banner de status (aberta/fechada). **Nota**: Validação backend da janela ainda não implementada — apenas informativo no frontend.
+### RN-FAIR-02: Banner de status
+- Frontend calcula em tempo real se a feira está aberta/fechada baseado na config.
+- Exibe banner contextual: "Feira aberta", "Abre amanhã às X", "Fechada".
 
----
+## RN-NOTIF — Notificações
 
-## Regras de Geolocalização
+### RN-NOTIF-01: Três canais independentes
+- **In-app**: registro no banco (`notifications` collection), polling via API.
+- **Push**: Expo Push API (mobile).
+- **WhatsApp**: z-api (mensagem formatada com emojis e link).
 
-### RN-GEO-01: Detecção de cidade por GPS
-**Descrição**: Botão "Usar minha localização" usa `navigator.geolocation` + reverse geocode via Nominatim (OpenStreetMap).  
-**Implementação**: `web/src/app/perfil/page.tsx` → `handleUseMyLocation()`  
-**Fallback**: Se GPS indisponível ou negado, usuário digita endereço manualmente.
+### RN-NOTIF-02: Fire-and-forget
+- Envio de push e WhatsApp ocorre em thread separada (daemon).
+- Falha no envio **não** bloqueia a response do endpoint principal.
+- Não há retry automático em caso de falha.
 
-### RN-GEO-02: Geocode por IA (endereço digitado)
-**Descrição**: Quando o usuário digita um endereço, o backend extrai cidade/estado via GPT-4o-mini.  
-**Implementação**: `POST /producer/geocode`  
-**Regras do prompt**: 
-- Nomes de rua/bairro (ex: "Rua Treze de Maio") NÃO são tratados como cidades
-- Só preenche `city` se o município estiver claramente identificado
-- Casos ambíguos retornam `null` (não chuta)
-
-### RN-GEO-03: Chip de localização sempre visível
-**Descrição**: O chip com cidade/UF aparece sempre que há informação disponível — seja do GPS, do geocode IA, ou do `form.city` salvo no banco.  
-**Prioridade**: geoHint (recém detectado) > form.city (salvo)
-
----
-
-## Regras de Upload
-
-### RN-UPLOAD-01: Imagens processadas antes do upload
-**Descrição**: Imagens são processadas via Pillow (resize, compressão) antes de upload ao Spaces.  
-**Limite**: `client_max_body_size 10m` no nginx.
-
-### RN-UPLOAD-02: URLs públicas
-**Descrição**: Imagens ficam públicas no Spaces (ACL `public-read`).  
-**Estrutura**: `terraviva/profiles/{uuid}.{ext}` e `terraviva/products/{uuid}.{ext}`.
-
----
-
-## Regras de Segurança
-
-### RN-SEC-01: Cookie secure em produção
-**Descrição**: Cookie de sessão usa `secure: true` em produção (HTTPS only).
-
-### RN-SEC-02: CORS restritivo
-**Descrição**: Apenas origens listadas em `CORS_ORIGINS` são aceitas.
-
-### RN-SEC-03: Token validado em cada request autenticada
-**Descrição**: `dependencies.py` → `get_current_user()` decodifica JWT e busca usuário no banco.
-
-### RN-SEC-04: DEV_OTP_DEFAULT vazio em produção
-**Descrição**: O código OTP fixo para desenvolvimento tem default vazio. Só funciona se explicitamente configurado via env var.
+### RN-NOTIF-03: Mensagens ricas no WhatsApp
+- Mensagens incluem: detalhes do pedido, emojis, separadores visuais, link para a plataforma.
+- Labels humanizados: `feira` → "🏪 Na feira", `pix` → "💸 Pix", etc.

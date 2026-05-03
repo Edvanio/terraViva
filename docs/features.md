@@ -2,196 +2,95 @@
 
 ## Funcionalidades Principais
 
-### 1. Autenticação por OTP (SMS)
-**Descrição**: Login sem senha via código de 6 dígitos enviado por SMS ao celular.  
-**Casos de Uso**: Primeiro acesso, re-autenticação após expiração.  
-**Componentes**:
-- `backend/routers/auth.py` — request-otp, verify-otp
-- `web/src/app/login/page.tsx` — Formulário OTP
-- `web/middleware.ts` — Proteção de rotas
-- `web/src/lib/useAuthGuard.ts` — Guard client-side
+### 1. Autenticação por OTP (sem senha)
+**Descrição**: Login via código de 6 dígitos enviado por SMS/WhatsApp ao telefone do usuário.
+**Casos de Uso**: Primeiro acesso cria conta automaticamente; acessos seguintes apenas validam OTP.
+**Componentes**: `backend/routers/auth.py`, `web/src/app/login/`, `app/src/screens/auth/`
+**Dependências**: Coleção `otp_codes` com TTL index (5min de expiração automática).
 
-**Fluxo**:
-1. Usuário informa telefone
-2. Backend gera OTP (6 dígitos via `secrets`), salva em `otp_codes` com TTL 5min
-3. Em dev: retorna código na resposta. Em prod: enviaria SMS (não implementado)
-4. Usuário informa código
-5. Backend valida, cria/encontra usuário, gera JWT (360 dias)
-6. Frontend salva em localStorage + cookie httpOnly
-
----
-
-### 2. Vitrine de Bancas (Público)
-**Descrição**: Listagem pública de produtores que possuem produtos ativos.  
-**Casos de Uso**: Qualquer pessoa — consumidor final ou outro produtor — navega as bancas sem login. Como cada produtor vende produtos diferentes, é comum que produtores comprem entre si (ex: quem faz queijo compra verduras de outro).  
-**Componentes**:
-- `backend/routers/bancas.py` — GET /bancas, GET /bancas/{id}
-- `web/src/app/bancas/page.tsx` — Listagem SSR
-- `web/src/app/banca/[id]/page.tsx` — Detalhe SSR
-- `web/src/components/BancaCard.tsx` — Card de banca
-
-**Detalhes**: Aceita lookup por ObjectId ou `short_code` (5 chars alfanuméricos para URLs curtas de compartilhamento).
-
----
+### 2. Vitrine de Produtores (Bancas)
+**Descrição**: Listagem pública de todos os produtores com produtos ativos. Cada banca mostra foto, nome, cidade, categorias e produtos disponíveis.
+**Casos de Uso**: Consumidor navega, filtra por categoria, acessa detalhe da banca.
+**Componentes**: `backend/routers/bancas.py`, `web/src/app/bancas/`, `web/src/components/BancaCard.tsx`
+**Dependências**: Produtos ativos do produtor, foto de perfil (DO Spaces).
 
 ### 3. Cadastro Inteligente de Produtos (IA)
-**Descrição**: Produtor fotografa o produto e a IA preenche automaticamente nome, descrição, categoria, preço sugerido e cores.  
-**Casos de Uso**: Produtor rural com pouca experiência digital cadastra produtos rapidamente.  
-**Componentes**:
-- `backend/routers/ai_products.py` — POST /products/ai-generate
-- `backend/services/openai_service.py` — GPT-4o Vision + DALL-E 2
-- `web/src/components/AIProductModal.tsx` — Modal de geração
-- `web/src/components/AIProductSteps.tsx` — Wizard step-by-step
+**Descrição**: Produtor fotografa o produto → GPT-4o Vision analisa a imagem e sugere nome, descrição, categoria, preço estimado e cores predominantes. O produtor pode editar antes de salvar.
+**Casos de Uso**: Cadastro rápido para produtores com dificuldade em descrever produtos.
+**Componentes**: `backend/routers/ai_products.py`, `backend/services/openai_service.py`, `web/src/components/AIProductModal.tsx`
+**Dependências**: API OpenAI (GPT-4o Vision), DO Spaces para upload da imagem.
 
-**Fluxo**:
-1. Produtor tira/seleciona foto do produto
-2. Foto é enviada ao backend
-3. Backend envia para GPT-4o Vision com prompt especializado
-4. IA retorna: nome, descrição, categoria, preço sugerido, cores
-5. Opcionalmente, DALL-E 2 gera imagem de fundo estilizada
-6. Produtor revisa e confirma (pode editar antes de salvar)
+### 4. CRUD de Produtos
+**Descrição**: Gerenciamento completo de catálogo — criar, editar, ativar/desativar, controlar estoque.
+**Casos de Uso**: Produtor gerencia sua vitrine pela aba "Minha Banca".
+**Componentes**: `backend/routers/products.py`, `web/src/app/minha-banca/page.tsx`
+**Dependências**: Upload de imagem para DO Spaces; estoque nullable (sem controle = estoque infinito).
 
----
+### 5. Sistema de Reservas (Pedidos)
+**Descrição**: Consumidor reserva produtos para retirada na feira. Fluxo de status: `pending → confirmed → collected`. Produtor confirma preparação; marca como coletado no dia.
+**Casos de Uso**: 
+- Consumidor faz pedido (escolhe produto, quantidade, local de retirada, forma de pagamento)
+- Produtor confirma ou cancela
+- No dia da feira, marca como coletado
+**Componentes**: `backend/routers/reservations.py`, `web/src/app/pedidos/`, `web/src/app/minha-banca/`
+**Dependências**: Notificações (push + WhatsApp) em cada mudança de status.
 
-### 4. Gestão de Produtos (CRUD)
-**Descrição**: Produtor gerencia seu catálogo de produtos.  
-**Casos de Uso**: Criar, editar preço/estoque, marcar esgotado, excluir produto.  
-**Componentes**:
-- `backend/routers/products.py` — CRUD completo
-- `web/src/app/minha-banca/page.tsx` — Painel do produtor (tab "Produtos")
+### 6. Notificações Multi-canal
+**Descrição**: Sistema de notificações com 3 canais: in-app (polling), push (Expo), WhatsApp (z-api).
+**Casos de Uso**:
+- Novo pedido → notifica produtor
+- Pedido confirmado/coletado/cancelado → notifica consumidor
+**Componentes**: `backend/routers/notifications.py`, `backend/utils.py`, `web/src/components/NotificationBell.tsx`
+**Dependências**: z-api (WhatsApp), Expo Push API, coleção `notifications`.
 
-**Funcionalidades**:
-- Criar produto (manual ou via IA)
-- Editar nome, preço, descrição, foto, categoria
-- Controle de estoque (quantidade ou ilimitado)
-- Toggle disponível/esgotado (`is_active`)
-- Excluir produto
-- Upload de foto para DigitalOcean Spaces
+### 7. Perfil do Produtor
+**Descrição**: Configuração completa da banca — nome, bio, cidade, foto, capa, chave Pix, métodos de pagamento aceitos, geolocalização.
+**Casos de Uso**: Produtor configura sua identidade visual e informações de contato.
+**Componentes**: `backend/routers/producers.py`, `web/src/app/perfil/`
+**Dependências**: DO Spaces (fotos), Nominatim/OpenAI (geocoding), geração de short_code.
 
----
+### 8. Short Codes (URLs Curtas)
+**Descrição**: Cada produtor recebe um código alfanumérico de 5 caracteres para compartilhar sua banca via WhatsApp/redes sociais.
+**Casos de Uso**: Produtor compartilha `terra-viva.app/b/ABC12` em grupos de WhatsApp.
+**Componentes**: `backend/utils.py` (`generate_short_code`), startup migration em `main.py`
+**Dependências**: Índice unique + sparse na coleção `users`.
 
-### 5. Sistema de Reservas
-**Descrição**: Consumidor reserva produtos para retirada na feira física.  
-**Casos de Uso**: Garantir disponibilidade antes de ir à feira.  
-**Componentes**:
-- `backend/routers/reservations.py` — Criar, listar, atualizar status, cancelar
-- `web/src/app/banca/[id]/reservar/page.tsx` — Formulário de reserva
-- `web/src/app/pedidos/page.tsx` — Lista de pedidos do consumidor
-- `web/src/app/minha-banca/page.tsx` — Pedidos recebidos (tab "Pedidos")
+### 9. Configuração da Feira
+**Descrição**: Administrador configura horário de funcionamento, local, e janela de pedidos da feira.
+**Casos de Uso**: Definir quando a feira abre/fecha, onde será realizada.
+**Componentes**: `backend/routers/fair_config.py`, `web/src/components/FairStatusBanner.tsx`
+**Dependências**: Coleção `fair_config` (singleton document).
 
-**Fluxo**:
-1. Consumidor escolhe produto, quantidade, local de retirada e forma de pagamento
-2. Reserva é criada com status `pending`
-3. Produtor recebe notificação push
-4. Produtor confirma → status `confirmed`
-5. Na retirada → status `collected`
-6. Consumidor pode cancelar se ainda `pending`
+### 10. Avaliações Pós-compra
+**Descrição**: Após coleta, consumidor pode avaliar o pedido (1-5 estrelas + comentário). Avaliações são públicas na vitrine da banca.
+**Casos de Uso**: Feedback público para outros consumidores.
+**Componentes**: `backend/routers/reviews.py`
+**Dependências**: Uma review por reservation (unique index), vinculada ao producer_id.
 
-**Status possíveis**: `pending` → `confirmed` → `collected` | `cancelled` | `fiado`
-
-**Sistema Fiado**: Produtor pode marcar pedido como "fiado" — o cliente leva o produto e paga depois. Na tela do produtor há 3 tabs: Pedidos, Fiados e Produtos. Tab "Fiados" filtra reservas com status `fiado`. Ações disponíveis: ✅ Pago (muda para `collected`), ❌ Cancelar.
-
----
-
-### 6. Perfil do Produtor
-**Descrição**: Produtor configura seu perfil público (nome, bio, cidade, foto, capa, meios de pagamento, chave Pix).  
-**Componentes**:
-- `backend/routers/producers.py` — GET/PUT profile, upload foto/capa, geocode
-- `web/src/app/perfil/page.tsx` — Formulário de perfil
-- `web/src/components/CustomerInfoPrompt.tsx` — Prompt de nome/cidade (consumidores)
-- Upload de avatar e capa para DO Spaces
-
-**Geolocalização**:
-- Botão "📍 Usar minha localização" usa `navigator.geolocation` + reverse geocode via **Nominatim/OpenStreetMap** (gratuito, sem API key)
-- Detecta cidade e UF automaticamente pelas coordenadas GPS
-- Chip exibe a cidade detectada abaixo do campo endereço
-- Fallback: geocode via OpenAI GPT-4o-mini quando o endereço é digitado (prompt otimizado para diferenciar nomes de rua vs município)
-
----
-
-### 6b. Identificação do Consumidor (CustomerInfoPrompt)
-**Descrição**: Antes de fazer o primeiro pedido, o consumidor é solicitado a informar nome (obrigatório) e cidade (opcional).  
-**Componentes**:
-- `web/src/components/CustomerInfoPrompt.tsx` — Componente 2 steps
-- `web/src/app/banca/[id]/reservar/page.tsx` — Integração no checkout
-
-**Fluxo**:
-1. Ao acessar reserva, busca `GET /producer/profile`
-2. Se `name == null`, exibe prompt "👋 Qual o seu nome?"
-3. Após nome, exibe "📍 Onde você mora?" (com botão "Pular")
-4. Salva via `PUT /producer/profile`
-5. Formulário de reserva aparece
-
----
-
-### 7. Compartilhamento de Banca (Short URL)
-**Descrição**: Cada produtor tem um `short_code` de 5 caracteres. Gera URL curta para compartilhar no WhatsApp.  
-**Componentes**:
-- `backend/utils.py` — `generate_short_code(db)`
-- `web/src/components/ShareButton.tsx` — Botão com Web Share API + fallback clipboard
-- `backend/routers/bancas.py` — GET /bancas/{short_code} aceita short_code
-
-**Exemplo**: `https://terra-viva-3n3ko.ondigitalocean.app/banca/lyaqk`
-
----
-
-### 8. Configuração da Feira
-**Descrição**: Configuração de horário de funcionamento da feira, janela de pedidos, localização.  
-**Componentes**:
-- `backend/routers/fair_config.py` — CRUD config
-- `web/src/components/FairStatusBanner.tsx` — Banner de status (aberta/fechada)
-
----
+### 11. Sistema de Fiado
+**Descrição**: Produtor pode marcar um pedido coletado como "fiado" — indicando que o pagamento ficou pendente para próxima feira.
+**Casos de Uso**: Produtor anota dívidas informais de clientes frequentes.
+**Componentes**: `backend/routers/reservations.py` (status `fiado`), `web/src/app/minha-banca/` (aba Fiados)
+**Dependências**: Apenas mudança de status — sem integração com gateway de pagamento.
 
 ## Funcionalidades Secundárias
 
-### Push Notifications
-- Produtor recebe notificação quando um pedido é criado
-- Usa Expo Push Notifications (token salvo em `users.expo_push_token`)
-- Disparo fire-and-forget via thread daemon
+### Onboarding
+Fluxo de primeira vez que introduz o usuário à plataforma (carrossel de benefícios).
 
-### Middleware de Proteção
-- `web/middleware.ts` verifica cookie para rotas protegidas (`/pedidos`, `/perfil`, `/minha-banca`, `/banca/*/reservar`)
-- Redireciona para `/login?redirect=...` preservando destino
+### Banner de Status da Feira
+Indicador visual no topo da home mostrando se a feira está aberta, fechada, ou próxima de abrir.
 
-### Header Inteligente
-- Server Component que lê cookie
-- Mostra "Entrar" (guest) ou "Perfil + Sair" (logado)
-- Nav desktop oculta em mobile (usa BottomTabBar)
+### Geolocalização Automática
+Na edição de perfil, detecta cidade via GPS do navegador + reverse geocoding (Nominatim → fallback OpenAI).
 
-### BottomTabBar Responsiva
-- Mobile-only (md:hidden)
-- Guest: Início, Produtores, Entrar
-- Logado: Início, Produtores, Pedidos, Vender, Perfil
-- Escuta `storage` events para reagir a logout em tempo real
-
----
-
-### Pagamento Padrão Pix
-- Na tela de reserva, o pagamento padrão mudou de "Dinheiro" para **"Pix"**
-- Reflete o uso real dos produtores da região
-
-### Favicon Terra Viva
-- Ícone SVG customizado (broto verde em fundo #2d6a4f) em `web/src/app/icon.svg`
-- Next.js App Router detecta automaticamente
-- `themeColor: "#2d6a4f"` no metadata do layout
-
-### Quantidade Destacada nos Pedidos
-- Cards de pedido exibem `📦 Nx Nome do Produto` com badge visual
-- Facilita leitura rápida da quantidade no painel do produtor
-
-### WhatsApp com Labels Unificados
-- Mensagem WhatsApp usa constantes `PICKUP_LABEL` e `PAYMENT_LABEL` para manter consistência
-- Evita duplicação de labels entre exibição e mensagem
-
----
+### Polling de Notificações
+Bell icon com badge de não-lidas; polling a cada 30s no frontend web.
 
 ## Funcionalidades Planejadas (Roadmap)
 
-- [ ] Envio real de SMS (Twilio/Vonage) em produção
-- [ ] Avaliações/ratings de produtores
-- [ ] Chat/mensagens entre consumidor e produtor
-- [ ] Gateway de pagamento (Pix automático)
-- [ ] Painel admin para gestão da feira
-- [ ] Multi-feira (múltiplas cidades)
-- [ ] Histórico e analytics para produtores
+- Pagamento online integrado (Pix automático)
+- Chat entre produtor e consumidor
+- Entregas com rastreamento
+- Multi-feira (várias feiras no mesmo sistema)
+- Relatórios de vendas para produtores
