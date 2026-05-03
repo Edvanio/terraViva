@@ -11,7 +11,6 @@ import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
 import { AIProductModal } from "@/components/AIProductModal";
 import { parsePrice } from "@/lib/format";
-import { useAuthGuard } from "@/lib/useAuthGuard";
 
 interface Order {
   id: string;
@@ -60,13 +59,12 @@ const PAYMENT_LABEL: Record<string, string> = {
 };
 
 export default function MinhaBancaPage() {
-  const { ready } = useAuthGuard();
   const router = useRouter();
   const [tab, setTab] = useState<"orders" | "products">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasProfile, setHasProfile] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [producerCity, setProducerCity] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
@@ -109,21 +107,17 @@ export default function MinhaBancaPage() {
   async function loadData() {
     const token = getToken();
     if (!token) {
-      router.replace("/login");
+      setIsLoggedIn(false);
+      setLoading(false);
       return;
     }
+    setIsLoggedIn(true);
 
     const [ordersRes, productsRes, profileRes] = await Promise.all([
       fetch(`${base}/reservations/producer`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${base}/products/mine`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${base}/producer/profile`, { headers: { Authorization: `Bearer ${token}` } }),
     ]);
-
-    if (profileRes.status === 404) {
-      setHasProfile(false);
-      setLoading(false);
-      return;
-    }
 
     if (profileRes.ok) {
       const profile = await profileRes.json();
@@ -135,7 +129,7 @@ export default function MinhaBancaPage() {
     setLoading(false);
   }
 
-  useEffect(() => { if (ready) loadData(); }, [ready]);
+  useEffect(() => { loadData(); }, []);
 
   async function updateOrderStatus(orderId: string, status: Order["status"]) {
     const token = getToken();
@@ -229,8 +223,6 @@ export default function MinhaBancaPage() {
     setShowAiModal(true);
   }
 
-  if (!ready) return null;
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -241,14 +233,14 @@ export default function MinhaBancaPage() {
     );
   }
 
-  if (!hasProfile) {
+  if (!isLoggedIn) {
     return (
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
-        <span className="text-5xl">🌱</span>
-        <p className="text-xl font-bold text-textPrimary">Você ainda não tem perfil de vendedor</p>
-        <p className="text-textSecondary">Crie seu perfil para começar a vender seus produtos.</p>
-        <Link href="/perfil">
-          <Button size="lg" className="mt-2">Criar meu perfil</Button>
+        <span className="text-5xl">\u{1F33F}</span>
+        <p className="text-xl font-bold text-textPrimary">Venda seus produtos na feira</p>
+        <p className="text-textSecondary">Entre com seu WhatsApp para cadastrar produtos e come\u{00E7}ar a vender.</p>
+        <Link href={`/login?redirect=${encodeURIComponent("/minha-banca")}`}>
+          <Button size="lg" className="mt-2">Entrar para vender</Button>
         </Link>
       </div>
     );
