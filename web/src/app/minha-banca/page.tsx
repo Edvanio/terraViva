@@ -11,7 +11,6 @@ import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
 import { AIProductModal } from "@/components/AIProductModal";
 import { parsePrice } from "@/lib/format";
-import { useAuthGuard } from "@/lib/useAuthGuard";
 
 interface Order {
   id: string;
@@ -49,7 +48,7 @@ function getToken(): string | null {
 const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
 
 const PICKUP_LABEL: Record<string, string> = {
-  feira: "� Na feira",
+  feira: "🏪 Na feira",
   produtor: "🌾 Buscar no produtor",
   entrega: "🚜 Entrega em casa",
 };
@@ -60,13 +59,12 @@ const PAYMENT_LABEL: Record<string, string> = {
 };
 
 export default function MinhaBancaPage() {
-  const { ready } = useAuthGuard();
   const router = useRouter();
   const [tab, setTab] = useState<"orders" | "products">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasProfile, setHasProfile] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [producerCity, setProducerCity] = useState<string>("");
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
@@ -109,9 +107,10 @@ export default function MinhaBancaPage() {
   async function loadData() {
     const token = getToken();
     if (!token) {
-      router.replace("/login");
+      router.replace(`/login?redirect=${encodeURIComponent("/minha-banca")}`);
       return;
     }
+    setIsLoggedIn(true);
 
     const [ordersRes, productsRes, profileRes] = await Promise.all([
       fetch(`${base}/reservations/producer`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -119,15 +118,16 @@ export default function MinhaBancaPage() {
       fetch(`${base}/producer/profile`, { headers: { Authorization: `Bearer ${token}` } }),
     ]);
 
-    if (profileRes.status === 404) {
-      setHasProfile(false);
-      setLoading(false);
-      return;
-    }
-
     if (profileRes.ok) {
       const profile = await profileRes.json();
+      if (!profile.name) {
+        router.replace(`/perfil?redirect=${encodeURIComponent("/minha-banca")}`);
+        return;
+      }
       setProducerCity(profile.city || "");
+    } else {
+      router.replace(`/perfil?redirect=${encodeURIComponent("/minha-banca")}`);
+      return;
     }
 
     if (ordersRes.ok) setOrders(await ordersRes.json());
@@ -135,7 +135,7 @@ export default function MinhaBancaPage() {
     setLoading(false);
   }
 
-  useEffect(() => { if (ready) loadData(); }, [ready]);
+  useEffect(() => { loadData(); }, []);
 
   async function updateOrderStatus(orderId: string, status: Order["status"]) {
     const token = getToken();
@@ -229,8 +229,6 @@ export default function MinhaBancaPage() {
     setShowAiModal(true);
   }
 
-  if (!ready) return null;
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -241,17 +239,8 @@ export default function MinhaBancaPage() {
     );
   }
 
-  if (!hasProfile) {
-    return (
-      <div className="mx-auto max-w-md space-y-4 py-16 text-center">
-        <span className="text-5xl">🌱</span>
-        <p className="text-xl font-bold text-textPrimary">Você ainda não tem perfil de vendedor</p>
-        <p className="text-textSecondary">Crie seu perfil para começar a vender seus produtos.</p>
-        <Link href="/perfil">
-          <Button size="lg" className="mt-2">Criar meu perfil</Button>
-        </Link>
-      </div>
-    );
+  if (!isLoggedIn) {
+    return null;
   }
 
   return (
@@ -363,7 +352,7 @@ export default function MinhaBancaPage() {
                   {/* Botões de status */}
                   {order.status === "pending" && (
                     <div className="flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                      <Button size="lg" className="flex-1 py-3" onClick={() => updateOrderStatus(order.id, "confirmed")}>
                         🤝 Confirmar pedido
                       </Button>
                       <button
@@ -492,7 +481,7 @@ export default function MinhaBancaPage() {
                 <input
                   ref={photoInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadProductPhoto(f); }}
                 />

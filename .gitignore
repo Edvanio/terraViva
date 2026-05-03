@@ -12,3 +12,4 @@
 .env.production
 backend/.env
 web/.env
+**/__pycache__

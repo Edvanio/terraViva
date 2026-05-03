@@ -6,15 +6,16 @@ import { apiGet } from "@/lib/api";
 export default async function BancaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const banca = await apiGet<Banca>(`/bancas/${id}`);
-  const initial = banca.city?.charAt(0).toUpperCase() ?? "B";
+  const displayName = banca.name || banca.city || "Banca";
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="space-y-6">
       {/* Perfil do Produtor */}
       <section className="overflow-hidden rounded-3xl bg-surface shadow-card">
         {/* Cover */}
-        <div className="relative h-40 bg-gradient-to-br from-primary to-primary-medium">
-          {banca.cover_url && (
+        <div className="relative h-40">
+          {banca.cover_url ? (
             <Image
               src={banca.cover_url}
               alt="Capa"
@@ -22,6 +23,10 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
               unoptimized
               className="object-cover"
             />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#2d6b4f] via-[#3a7d5c] to-[#8fbc8f]">
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.3),transparent_50%),radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_50%)]" />
+            </div>
           )}
           {/* Overlay verde suave */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -29,7 +34,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
             {banca.photo_url ? (
               <Image
                 src={banca.photo_url}
-                alt={banca.city}
+                alt={displayName}
                 width={88}
                 height={88}
                 unoptimized
@@ -47,7 +52,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
         <div className="px-6 pb-6 pt-16">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-display text-2xl font-bold text-textPrimary">{banca.city}</h1>
+              <h1 className="font-display text-2xl font-bold text-textPrimary">{displayName}</h1>
               <p className="mt-1 text-sm text-textSecondary leading-relaxed">{banca.bio || "Produtos frescos direto da nossa terra pra você 🌱"}</p>
             </div>
             <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-amber-light px-3 py-1.5">

@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { formatPhone } from "@/lib/format";
@@ -21,6 +21,7 @@ function getToken(): string | null {
 }
 
 interface ProfileData {
+  name: string;
   city: string;
   bio: string;
   address: string;
@@ -32,19 +33,29 @@ interface ProfileData {
 }
 
 const EMPTY: ProfileData = {
+  name: "",
   city: "",
   bio: "",
   address: "",
   pix_key: "",
-  payment_methods: ["cash"],
+  payment_methods: ["cash", "pix"],
   phone: "",
   photo_url: null,
   cover_url: null,
 };
 
 export default function PerfilPage() {
+  return (
+    <Suspense fallback={null}>
+      <PerfilContent />
+    </Suspense>
+  );
+}
+
+function PerfilContent() {
   const { ready } = useAuthGuard();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState<ProfileData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,6 +64,8 @@ export default function PerfilPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [geoHint, setGeoHint] = useState<{ city: string | null; state: string | null } | null>(null);
   const { toast } = useToast();
+  const [loaded, setLoaded] = useState(false);
+  const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -79,11 +92,13 @@ export default function PerfilPage() {
           setForm({ ...EMPTY, phone: formatPhone(getPhoneFromToken(token)) });
           setIsNew(true);
           setLoading(false);
+          setLoaded(true);
           return;
         }
         const data = await res.json();
         const tokenPhone = getPhoneFromToken(token);
         setForm({
+          name: data.name ?? "",
           city: data.city ?? "",
           bio: data.bio ?? "",
           address: data.address ?? "",
@@ -94,6 +109,7 @@ export default function PerfilPage() {
           cover_url: data.cover_url ?? null,
         });
         setLoading(false);
+        setLoaded(true);
       })
       .catch(() => setLoading(false));
   }, [base, ready]);
@@ -122,6 +138,8 @@ export default function PerfilPage() {
         const data = await res.json();
         if (data?.city || data?.state) {
           setGeoHint({ city: data.city ?? null, state: data.state ?? null });
+          const cityState = [data.city, data.state].filter(Boolean).join(", ");
+          if (cityState) setForm((prev) => ({ ...prev, city: cityState }));
         }
       } catch {
         // sem bloqueio da UX
@@ -158,7 +176,18 @@ export default function PerfilPage() {
     setUploadingPhoto(true);
     try {
       const url = await uploadFile(file);
-      if (url) setForm((prev) => ({ ...prev, photo_url: url }));
+      if (url) {
+        setForm((prev) => ({ ...prev, photo_url: url }));
+        // Salva imediatamente no backend
+        const token = getToken();
+        if (token) {
+          await fetch(`${base}/producer/profile`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ photo_url: url }),
+          });
+        }
+      }
       toast("Foto de perfil atualizada! ✅");
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Erro ao enviar foto.", "error");
@@ -174,7 +203,18 @@ export default function PerfilPage() {
     setUploadingCover(true);
     try {
       const url = await uploadFile(file);
-      if (url) setForm((prev) => ({ ...prev, cover_url: url }));
+      if (url) {
+        setForm((prev) => ({ ...prev, cover_url: url }));
+        // Salva imediatamente no backend
+        const token = getToken();
+        if (token) {
+          await fetch(`${base}/producer/profile`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ cover_url: url }),
+          });
+        }
+      }
       toast("Foto de capa atualizada! ✅");
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Erro ao enviar capa.", "error");
@@ -193,32 +233,36 @@ export default function PerfilPage() {
     }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.city.trim()) {
-      toast("Cidade e obrigatoria.", "error");
-      return;
-    }
-    setSaving(true);
+  // Auto-save com debounce
+  useEffect(() => {
+    if (!loaded) return;
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(() => {
+      saveProfile();
+    }, 1500);
+    return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
+  }, [form.name, form.bio, form.address, form.city, form.payment_methods, loaded]);
 
+  async function saveProfile() {
     const token = getToken();
-    if (!token) { setSaving(false); return; }
+    if (!token) return;
+    if (!form.name?.trim()) return;
 
-    const method = isNew ? "POST" : "PUT";
+    setSaving(true);
     const payload = {
-      city: form.city,
+      name: form.name,
+      city: form.city ?? "",
       bio: form.bio ?? "",
       payment_methods: form.payment_methods,
       phone: form.phone ?? "",
       ...(form.photo_url ? { photo_url: form.photo_url } : {}),
       ...(form.cover_url ? { cover_url: form.cover_url } : {}),
       ...(form.address ? { address: form.address } : {}),
-      ...(form.pix_key ? { pix_key: form.pix_key } : {}),
     };
 
     try {
       const res = await fetch(`${base}/producer/profile`, {
-        method,
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -228,7 +272,10 @@ export default function PerfilPage() {
 
       if (!res.ok) throw new Error();
       setIsNew(false);
-      toast("Perfil salvo com sucesso! ✅");
+      const redirect = searchParams.get("redirect");
+      if (redirect) {
+        router.replace(redirect);
+      }
     } catch {
       toast("Não conseguimos salvar. Tente de novo.", "error");
     } finally {
@@ -253,7 +300,7 @@ export default function PerfilPage() {
 
       {/* ── FOTO DE CAPA ── */}
       <div
-        className="relative h-36 w-full cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-primary/30 to-primary/10 shadow-card"
+        className="relative h-36 w-full cursor-pointer overflow-hidden rounded-2xl shadow-card"
         onClick={() => coverInputRef.current?.click()}
       >
         {form.cover_url ? (
@@ -266,9 +313,12 @@ export default function PerfilPage() {
             unoptimized
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center gap-2 text-primary/60">
-            <span className="text-3xl">🌿</span>
-            <span className="text-sm font-medium">Clique para adicionar foto de fundo</span>
+          <div className="relative h-full w-full bg-gradient-to-br from-[#2d6b4f] via-[#3a7d5c] to-[#8fbc8f]">
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.3),transparent_50%),radial-gradient(circle_at_70%_30%,rgba(255,255,255,0.2),transparent_50%)]" />
+            <div className="flex h-full w-full items-center justify-center gap-2 text-white/70">
+              <span className="text-3xl">🌿</span>
+              <span className="text-sm font-medium">Clique para adicionar foto de fundo</span>
+            </div>
           </div>
         )}
 
@@ -297,7 +347,7 @@ export default function PerfilPage() {
         <input
           ref={coverInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/*"
           className="hidden"
           onChange={handleCoverChange}
         />
@@ -351,7 +401,7 @@ export default function PerfilPage() {
           <input
             ref={avatarInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
             className="hidden"
             onChange={handleAvatarChange}
           />
@@ -360,7 +410,7 @@ export default function PerfilPage() {
         {/* Nome/cidade */}
         <div className="pb-1">
           <h1 className="text-xl font-bold text-textPrimary">
-            {form.city || "Meu Perfil"}
+            {form.name || "Meu Perfil"}
           </h1>
           <p className="text-sm text-textSecondary">
             {isNew
@@ -371,20 +421,51 @@ export default function PerfilPage() {
       </div>
 
       {/* ── FORMULÁRIO ── */}
-      <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl bg-surface p-6 shadow-card">
+      <div className="space-y-5 rounded-2xl bg-surface p-6 shadow-card">
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">
             Seu nome
           </label>
           <Input
-            value={form.city}
-            onChange={(e) => setForm({ ...form, city: e.target.value })}
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="Ex: Maria Oliveira ou Família Wessler"
             required
           />
-          <p className="mt-1 text-xs text-textSecondary">Campo obrigatorio para sugestao de preco com IA.</p>
         </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-textPrimary">
+            Endereço
+          </label>
+          <Input
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            placeholder="Rua / localidade — para retirada no sítio"
+            required
+          />
+          {geoHint?.city || geoHint?.state ? (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
+                📍 {geoHint.city ?? "Cidade"}{geoHint.state ? `, ${geoHint.state}` : ""}
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {(form.city || geoHint?.city) && (
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-textPrimary">
+              Cidade / Estado
+            </label>
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-border/30 px-3 py-2.5">
+              <span className="text-base">📍</span>
+              <span className="flex-1 text-sm text-textPrimary">{form.city || `${geoHint?.city ?? ""}${geoHint?.state ? `, ${geoHint.state}` : ""}`}</span>
+              <span className="text-xs text-textSecondary">detectado via IA</span>
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">
@@ -435,50 +516,10 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        {form.payment_methods.includes("pix") && (
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-textPrimary">
-              Chave Pix
-            </label>
-            <Input
-              value={form.pix_key}
-              onChange={(e) => setForm({ ...form, pix_key: e.target.value })}
-              placeholder="CPF, e-mail, telefone ou chave aleatória"
-            />
-          </div>
+        {saving && (
+          <p className="text-center text-xs text-textSecondary animate-pulse">Salvando...</p>
         )}
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-textPrimary">
-            Endereço (opcional)
-          </label>
-          <Input
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-            placeholder="Rua / localidade — para retirada no sítio"
-          />
-          {geoHint?.city || geoHint?.state ? (
-            <div className="mt-2 flex items-center gap-2 text-xs">
-              <span className="rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
-                📍 {geoHint.city ?? "Cidade"}{geoHint.state ? `, ${geoHint.state}` : ""}
-              </span>
-              {geoHint.city && geoHint.city !== form.city ? (
-                <button
-                  type="button"
-                  className="text-primary underline"
-                  onClick={() => setForm((prev) => ({ ...prev, city: geoHint.city || prev.city }))}
-                >
-                  Usar esta cidade
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
-        <Button type="submit" size="lg" className="w-full" disabled={saving}>
-          {saving ? "Salvando..." : isNew ? "Criar perfil" : "Salvar alterações"}
-        </Button>
-      </form>
+      </div>
     </div>
   );
 }

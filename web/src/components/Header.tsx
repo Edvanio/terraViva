@@ -6,7 +6,7 @@ export async function Header() {
   const token = await getAuthToken();
   return (
     <header className="sticky top-0 z-20 border-b border-border/60 bg-surface/90 backdrop-blur-lg">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-center px-4 py-3 md:justify-between">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2d6a2d] to-[#1a4a1a] shadow-sm overflow-hidden">

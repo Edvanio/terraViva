@@ -24,7 +24,7 @@ app.include_router(bancas.router, prefix="/bancas", tags=["bancas"])
 app.include_router(products.router, prefix="/products", tags=["products"])
 app.include_router(ai_products.router, prefix="/products", tags=["products-ai"])
 app.include_router(reservations.router, prefix="/reservations", tags=["reservations"])
-app.include_router(producers.router, prefix="/producer", tags=["producer"])
+app.include_router(producers.router, prefix="/producer", tags=["profile"])
 app.include_router(fair_config.router, prefix="/fair-config", tags=["fair-config"])
 
 

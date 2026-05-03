@@ -1,18 +1,33 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
-  { href: "/", label: "Início", icon: "🏠", activeIcon: "🏡" },
-  { href: "/bancas", label: "Produtores", icon: "🌱", activeIcon: "🌿" },
-  { href: "/pedidos", label: "Pedidos", icon: "📋", activeIcon: "📋" },
-  { href: "/minha-banca", label: "Vender", icon: "🌽", activeIcon: "🌽" },
-  { href: "/perfil", label: "Perfil", icon: "👤", activeIcon: "👤" },
+const TABS_LOGGED = [
+  { href: "/", label: "In\u00edcio", icon: "\u{1F3E0}", activeIcon: "\u{1F3E1}" },
+  { href: "/bancas", label: "Produtores", icon: "\u{1F331}", activeIcon: "\u{1F33F}" },
+  { href: "/pedidos", label: "Pedidos", icon: "\u{1F4CB}", activeIcon: "\u{1F4CB}" },
+  { href: "/minha-banca", label: "Vender", icon: "\u{1F33D}", activeIcon: "\u{1F33D}" },
+  { href: "/perfil", label: "Perfil", icon: "\u{1F464}", activeIcon: "\u{1F464}" },
+];
+
+const TABS_GUEST = [
+  { href: "/", label: "In\u00edcio", icon: "\u{1F3E0}", activeIcon: "\u{1F3E1}" },
+  { href: "/bancas", label: "Produtores", icon: "\u{1F331}", activeIcon: "\u{1F33F}" },
+  { href: "/minha-banca", label: "Vender", icon: "\u{1F33D}", activeIcon: "\u{1F33D}" },
+  { href: "/login", label: "Entrar", icon: "\u{1F511}", activeIcon: "\u{1F511}" },
 ];
 
 export function BottomTabBar() {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("terra_viva_token"));
+  }, [pathname]);
+
+  const tabs = isLoggedIn ? TABS_LOGGED : TABS_GUEST;
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -22,7 +37,7 @@ export function BottomTabBar() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 backdrop-blur-lg shadow-tab md:hidden">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom,0px)]">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active = isActive(tab.href);
           return (
             <Link
