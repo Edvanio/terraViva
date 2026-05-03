@@ -110,8 +110,14 @@ async def geocode_address(payload: dict, user: dict = Depends(get_current_user))
                 {
                     "role": "user",
                     "content": (
-                        "Extraia cidade e estado brasileiros a partir do endereco abaixo. "
-                        "Retorne JSON com city e state (UF quando possivel). "
+                        "Voce e especialista em enderecos do Brasil.\n"
+                        "Extraia SOMENTE a cidade e o estado (UF) que estao EXPLICITAMENTE mencionados como municipio no endereco abaixo.\n"
+                        "REGRAS IMPORTANTES:\n"
+                        "- Nomes de ruas, avenidas, bairros ou comunidades (ex: 'Rua Treze de Maio', 'Bairro Sete de Setembro', 'Linha Colonial') NAO sao cidades — ignore-os.\n"
+                        "- So retorne city se o municipio estiver claramente identificado (ex: 'Auxiliadora, SC' ou 'cidade de Erechim').\n"
+                        "- Se houver ambiguidade ou o texto so tiver nome de rua/bairro, retorne city: null e state: null.\n"
+                        "- state deve ser a sigla brasileira (ex: SC, RS, PR).\n"
+                        "Retorne JSON com os campos 'city' e 'state'.\n"
                         f"Endereco: {address.strip()}"
                     ),
                 },

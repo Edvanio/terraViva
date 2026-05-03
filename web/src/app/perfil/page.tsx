@@ -443,19 +443,6 @@ function PerfilContent() {
           ) : null}
         </div>
 
-        {(form.city || geoHint?.city) && (
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-textPrimary">
-              Cidade / Estado
-            </label>
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-border/30 px-3 py-2.5">
-              <span className="text-base">📍</span>
-              <span className="flex-1 text-sm text-textPrimary">{form.city || `${geoHint?.city ?? ""}${geoHint?.state ? `, ${geoHint.state}` : ""}`}</span>
-              <span className="text-sm text-textSecondary">detectado via IA</span>
-            </div>
-          </div>
-        )}
-
         <div>
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">
             Local da feira <span className="font-normal text-textSecondary">(opcional)</span>
