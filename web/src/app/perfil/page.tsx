@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { formatPhone } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
 import { useAuthGuard } from "@/lib/useAuthGuard";
+import { ShareButton } from "@/components/ShareButton";
 
 const PAYMENT_OPTIONS = [
   { value: "cash", label: "💵 Dinheiro" },
@@ -60,6 +61,7 @@ function PerfilContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isNew, setIsNew] = useState(false);
+  const [shortCode, setShortCode] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [geoHint, setGeoHint] = useState<{ city: string | null; state: string | null } | null>(null);
@@ -108,6 +110,7 @@ function PerfilContent() {
           photo_url: data.photo_url ?? null,
           cover_url: data.cover_url ?? null,
         });
+        setShortCode(data.short_code ?? null);
         setLoading(false);
         setLoaded(true);
       })
@@ -417,6 +420,11 @@ function PerfilContent() {
               ? "Preencha seu perfil para começar a vender"
               : "Suas informações aparecem na banca e nos pedidos"}
           </p>
+          {!isNew && shortCode && form.name && (
+            <div className="mt-2">
+              <ShareButton name={form.name} shortCode={shortCode} />
+            </div>
+          )}
         </div>
       </div>
 

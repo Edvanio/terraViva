@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 import random
 import re
 import logging
+import secrets
+import string
 
 import httpx
 from jose import JWTError, jwt
@@ -22,6 +24,15 @@ def normalize_phone(phone: str) -> str:
 
 def generate_otp() -> str:
     return f"{random.randint(0, 999999):06d}"
+
+
+def generate_short_code(db) -> str:
+    """Gera um código curto único de 5 caracteres (letras minúsculas + dígitos)."""
+    chars = string.ascii_lowercase + string.digits
+    while True:
+        code = "".join(secrets.choice(chars) for _ in range(5))
+        if not db.users.find_one({"short_code": code}):
+            return code
 
 
 def create_access_token(subject: str, phone: str = "") -> str:

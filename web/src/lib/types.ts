@@ -13,6 +13,7 @@ export interface Product {
 
 export interface Banca {
   id: string;
+  short_code?: string | null;
   user_id: string;
   name?: string | null;
   bio: string;

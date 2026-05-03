@@ -44,6 +44,7 @@ class UserProfileUpdate(BaseModel):
 
 class UserProfileResponse(BaseModel):
     id: str
+    short_code: Optional[str] = None
     phone: str
     name: Optional[str] = None
     bio: Optional[str] = None
@@ -58,6 +59,7 @@ class UserProfileResponse(BaseModel):
 
 class BancaResponse(BaseModel):
     id: str
+    short_code: Optional[str] = None
     name: Optional[str] = None
     bio: Optional[str] = None
     city: Optional[str] = None

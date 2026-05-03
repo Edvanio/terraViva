@@ -7,7 +7,7 @@ from config import get_settings
 from database import get_db
 from dependencies import get_current_user
 from models import OtpRequest, OtpVerify, TokenResponse, UserResponse
-from utils import create_access_token, generate_otp, normalize_phone
+from utils import create_access_token, generate_otp, generate_short_code, normalize_phone
 
 router = APIRouter()
 
@@ -53,6 +53,7 @@ def verify_otp(payload: OtpVerify):
                 "phone": phone,
                 "name": None,
                 "created_at": datetime.now(timezone.utc),
+                "short_code": generate_short_code(db),
             }
         )
         user = db.users.find_one({"_id": result.inserted_id})
