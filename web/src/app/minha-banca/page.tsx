@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -711,9 +712,9 @@ export default function MinhaBancaPage() {
       )}
 
       {/* Modal de edição de produto */}
-      {editingId && (
-        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto">
-          <form onSubmit={addProduct} className="w-full sm:max-w-md min-h-screen sm:min-h-0 sm:max-h-[85vh] overflow-y-auto sm:rounded-2xl sm:border sm:border-border/50 bg-surface p-5 shadow-2xl space-y-3 animate-fade-in">
+      {editingId && createPortal(
+        <div className="fixed top-0 left-0 right-0 bottom-0 z-[99999] flex items-start sm:items-center justify-center bg-black/60 sm:overflow-y-auto sm:p-4">
+          <form onSubmit={addProduct} className="w-full sm:max-w-md h-full sm:h-auto sm:max-h-[85vh] overflow-y-auto sm:rounded-2xl sm:border sm:border-border/50 bg-surface px-4 pt-3 pb-6 sm:p-5 shadow-2xl space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-textPrimary">✏️ Editar produto</h3>
               <button type="button" onClick={closeEdit} className="text-textSecondary text-xl leading-none">✕</button>
@@ -835,7 +836,7 @@ export default function MinhaBancaPage() {
             </div>
           </form>
         </div>
-      )}
+      , document.body)}
 
       <AIProductModal
         open={showAiModal}
