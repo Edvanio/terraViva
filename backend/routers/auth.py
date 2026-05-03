@@ -67,5 +67,8 @@ def get_me(user: dict = Depends(get_current_user)):
         id=str(user["_id"]),
         phone=user["phone"],
         name=user.get("name"),
+        bio=user.get("bio"),
+        city=user.get("city"),
+        photo_url=user.get("photo_url"),
         created_at=user["created_at"],
     )

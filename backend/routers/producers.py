@@ -1,6 +1,5 @@
 import uuid
 import json
-from datetime import datetime, timezone
 
 import boto3
 from botocore.exceptions import ClientError
@@ -10,16 +9,12 @@ from openai import AsyncOpenAI
 from config import get_settings
 from database import get_db
 from dependencies import get_current_user
-from models import ProducerProfileCreate, ProducerProfileResponse, ProducerProfileUpdate
+from models import UserProfileResponse, UserProfileUpdate
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE_MB = 5
 
 router = APIRouter()
-
-
-def _normalize_city(city: str | None) -> str:
-    return (city or "").strip()
 
 
 def _get_s3_client():
@@ -34,7 +29,7 @@ def _get_s3_client():
 
 
 def _upload_to_spaces(content: bytes, filename: str, content_type: str) -> str:
-    """Faz upload para DigitalOcean Spaces e retorna a URL pública."""
+    """Faz upload para DigitalOcean Spaces e retorna a URL publica."""
     settings = get_settings()
     s3 = _get_s3_client()
     key = f"{settings.do_spaces_folder}/{filename}"
@@ -49,68 +44,38 @@ def _upload_to_spaces(content: bytes, filename: str, content_type: str) -> str:
     except ClientError as exc:
         raise HTTPException(status_code=502, detail=f"Erro ao enviar para o storage: {exc}") from exc
 
-    # URL pública: https://{bucket}.{endpoint_host}/{key}
     endpoint_host = settings.do_spaces_endpoint.replace("https://", "")
     return f"https://{settings.do_spaces_bucket}.{endpoint_host}/{key}"
 
 
-def _to_response(item: dict) -> ProducerProfileResponse:
-    return ProducerProfileResponse(
-        id=str(item["_id"]),
-        user_id=str(item["user_id"]),
-        bio=item.get("bio", ""),
-        city=item.get("city", ""),
-        phone=item.get("phone", ""),
-        payment_methods=item.get("payment_methods", ["cash"]),
-        photo_url=item.get("photo_url"),
-        cover_url=item.get("cover_url"),
-        gallery=item.get("gallery", []),
-        pix_key=item.get("pix_key"),
-        address=item.get("address"),
+def _to_response(user: dict) -> UserProfileResponse:
+    return UserProfileResponse(
+        id=str(user["_id"]),
+        phone=user.get("phone", ""),
+        name=user.get("name"),
+        bio=user.get("bio"),
+        city=user.get("city"),
+        payment_methods=user.get("payment_methods", ["cash"]),
+        photo_url=user.get("photo_url"),
+        cover_url=user.get("cover_url"),
+        gallery=user.get("gallery", []),
+        pix_key=user.get("pix_key"),
+        address=user.get("address"),
     )
 
 
-@router.get("/profile", response_model=ProducerProfileResponse)
+@router.get("/profile", response_model=UserProfileResponse)
 def get_profile(user: dict = Depends(get_current_user)):
+    return _to_response(user)
+
+
+@router.put("/profile", response_model=UserProfileResponse)
+def update_profile(payload: UserProfileUpdate, user: dict = Depends(get_current_user)):
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
-    return _to_response(producer)
-
-
-@router.post("/profile", response_model=ProducerProfileResponse)
-def create_profile(payload: ProducerProfileCreate, user: dict = Depends(get_current_user)):
-    db = get_db()
-    existing = db.producers.find_one({"user_id": user["_id"]})
-    if existing:
-        raise HTTPException(status_code=409, detail="Perfil ja existe")
-    if not _normalize_city(payload.city):
-        raise HTTPException(status_code=422, detail="Cidade e obrigatoria")
-
-    document = payload.model_dump()
-    document["user_id"] = user["_id"]
-    document["created_at"] = datetime.now(timezone.utc)
-    result = db.producers.insert_one(document)
-    created = db.producers.find_one({"_id": result.inserted_id})
-    return _to_response(created)
-
-
-@router.put("/profile", response_model=ProducerProfileResponse)
-def update_profile(payload: ProducerProfileUpdate, user: dict = Depends(get_current_user)):
-    db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
-
-    if payload.city is not None and not _normalize_city(payload.city):
-        raise HTTPException(status_code=422, detail="Cidade e obrigatoria")
-
     data = {k: v for k, v in payload.model_dump().items() if v is not None}
     if data:
-        db.producers.update_one({"_id": producer["_id"]}, {"$set": data})
-
-    updated = db.producers.find_one({"_id": producer["_id"]})
+        db.users.update_one({"_id": user["_id"]}, {"$set": data})
+    updated = db.users.find_one({"_id": user["_id"]})
     return _to_response(updated)
 
 
@@ -157,13 +122,13 @@ async def upload_photo(
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user),
 ):
-    """Faz upload de uma imagem para o DigitalOcean Spaces e retorna a URL pública."""
+    """Faz upload de uma imagem para o DigitalOcean Spaces e retorna a URL publica."""
     if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(status_code=400, detail="Formato inválido. Use JPG, PNG ou WebP.")
+        raise HTTPException(status_code=400, detail="Formato invalido. Use JPG, PNG ou WebP.")
 
     content = await file.read()
     if len(content) > MAX_SIZE_MB * 1024 * 1024:
-        raise HTTPException(status_code=413, detail=f"Imagem muito grande. Máximo {MAX_SIZE_MB}MB.")
+        raise HTTPException(status_code=413, detail=f"Imagem muito grande. Maximo {MAX_SIZE_MB}MB.")
 
     ext = (file.filename or "photo").rsplit(".", 1)[-1].lower()
     if ext not in {"jpg", "jpeg", "png", "webp", "gif"}:
@@ -173,6 +138,3 @@ async def upload_photo(
     public_url = _upload_to_spaces(content, filename, file.content_type or "image/jpeg")
 
     return {"url": public_url}
-
-
-

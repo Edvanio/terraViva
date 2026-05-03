@@ -22,26 +22,51 @@ class UserResponse(BaseModel):
     id: str
     phone: str
     name: Optional[str] = None
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    photo_url: Optional[str] = None
     created_at: datetime
+
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    phone: Optional[str] = None
+    payment_methods: Optional[list[Literal["cash", "pix", "card"]]] = None
+    photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: Optional[list[str]] = None
+    pix_key: Optional[str] = None
+    address: Optional[str] = None
+    expo_push_token: Optional[str] = None
+
+
+class UserProfileResponse(BaseModel):
+    id: str
+    phone: str
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    payment_methods: list[str] = ["cash"]
+    photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
+    gallery: list[str] = []
+    pix_key: Optional[str] = None
+    address: Optional[str] = None
 
 
 class BancaResponse(BaseModel):
     id: str
-    user_id: str
     name: Optional[str] = None
-    bio: str
-    city: str
-    payment_methods: list[str]
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    phone: Optional[str] = None
+    payment_methods: list[str] = ["cash"]
     photo_url: Optional[str] = None
     cover_url: Optional[str] = None
     categories: list[str] = []
     products_count: int = 0
-
-
-class BancaDetailResponse(BancaResponse):
-    gallery: list[str] = []
-    address: Optional[str] = None
-    pix_key: Optional[str] = None
 
 
 class ProductCreate(BaseModel):
@@ -70,7 +95,7 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(BaseModel):
     id: str
-    producer_id: str
+    user_id: str
     name: str
     price: float
     description: Optional[str] = None
@@ -131,46 +156,6 @@ class ReservationResponse(BaseModel):
     status: Literal["pending", "confirmed", "collected", "cancelled"]
     created_at: datetime
     updated_at: datetime
-
-
-class ProducerProfileCreate(BaseModel):
-    bio: str = ""
-    city: str
-    phone: str = ""
-    payment_methods: list[Literal["cash", "pix", "card"]] = ["cash"]
-    photo_url: Optional[str] = None
-    cover_url: Optional[str] = None
-    gallery: list[str] = []
-    pix_key: Optional[str] = None
-    address: Optional[str] = None
-    expo_push_token: Optional[str] = None
-
-
-class ProducerProfileUpdate(BaseModel):
-    bio: Optional[str] = None
-    city: Optional[str] = None
-    phone: Optional[str] = None
-    payment_methods: Optional[list[Literal["cash", "pix", "card"]]] = None
-    photo_url: Optional[str] = None
-    cover_url: Optional[str] = None
-    gallery: Optional[list[str]] = None
-    pix_key: Optional[str] = None
-    address: Optional[str] = None
-    expo_push_token: Optional[str] = None
-
-
-class ProducerProfileResponse(BaseModel):
-    id: str
-    user_id: str
-    bio: str
-    city: str
-    phone: str
-    payment_methods: list[str]
-    photo_url: Optional[str] = None
-    cover_url: Optional[str] = None
-    gallery: list[str] = []
-    pix_key: Optional[str] = None
-    address: Optional[str] = None
 
 
 class FairConfigCreate(BaseModel):

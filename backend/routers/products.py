@@ -25,14 +25,11 @@ def _validate_colors(data: dict):
 @router.get("/mine", response_model=list[ProductResponse])
 def list_mine(user: dict = Depends(get_current_user)):
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        return []
-    items = db.products.find({"producer_id": producer["_id"]})
+    items = db.products.find({"user_id": user["_id"]})
     return [
         ProductResponse(
             id=str(p["_id"]),
-            producer_id=str(p["producer_id"]),
+            user_id=str(p["user_id"]),
             name=p["name"],
             price=p["price"],
             description=p.get("description"),
@@ -50,33 +47,16 @@ def list_mine(user: dict = Depends(get_current_user)):
 @router.post("", response_model=ProductResponse)
 def create_product(payload: ProductCreate, user: dict = Depends(get_current_user)):
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        # Auto-cria perfil de produtor na primeira vez
-        result = db.producers.insert_one({
-            "user_id": user["_id"],
-            "bio": "",
-            "city": "",
-            "phone": user.get("phone", ""),
-            "payment_methods": ["cash"],
-            "photo_url": None,
-            "cover_url": None,
-            "gallery": [],
-            "pix_key": None,
-            "address": None,
-        })
-        producer = db.producers.find_one({"_id": result.inserted_id})
-
     document = payload.model_dump()
     _validate_colors(document)
-    document["producer_id"] = producer["_id"]
+    document["user_id"] = user["_id"]
     document["created_at"] = datetime.now(timezone.utc)
     result = db.products.insert_one(document)
     created = db.products.find_one({"_id": result.inserted_id})
 
     return ProductResponse(
         id=str(created["_id"]),
-        producer_id=str(created["producer_id"]),
+        user_id=str(created["user_id"]),
         name=created["name"],
         price=created["price"],
         description=created.get("description"),
@@ -92,11 +72,7 @@ def create_product(payload: ProductCreate, user: dict = Depends(get_current_user
 @router.put("/{product_id}", response_model=ProductResponse)
 def update_product(product_id: str, payload: ProductUpdate, user: dict = Depends(get_current_user)):
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
-
-    product = db.products.find_one({"_id": ObjectId(product_id), "producer_id": producer["_id"]})
+    product = db.products.find_one({"_id": ObjectId(product_id), "user_id": user["_id"]})
     if not product:
         raise HTTPException(status_code=404, detail="Produto nao encontrado")
 
@@ -108,7 +84,7 @@ def update_product(product_id: str, payload: ProductUpdate, user: dict = Depends
     updated = db.products.find_one({"_id": product["_id"]})
     return ProductResponse(
         id=str(updated["_id"]),
-        producer_id=str(updated["producer_id"]),
+        user_id=str(updated["user_id"]),
         name=updated["name"],
         price=updated["price"],
         description=updated.get("description"),
@@ -124,11 +100,7 @@ def update_product(product_id: str, payload: ProductUpdate, user: dict = Depends
 @router.delete("/{product_id}")
 def delete_product(product_id: str, user: dict = Depends(get_current_user)):
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
-
-    result = db.products.delete_one({"_id": ObjectId(product_id), "producer_id": producer["_id"]})
+    result = db.products.delete_one({"_id": ObjectId(product_id), "user_id": user["_id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Produto nao encontrado")
-    return {"deleted": True}
+    return {"detail": "Produto removido"}

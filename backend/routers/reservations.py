@@ -13,20 +13,19 @@ router = APIRouter()
 
 
 def _to_response(document: dict, db=None) -> ReservationResponse:
+    if db is None:
+        db = get_db()
+
     product_photo_url = None
     product_description = None
+    product_category = None
     consumer_name = None
     consumer_phone = None
     producer_name = None
     producer_phone = None
     producer_photo_url = None
 
-    if db is None:
-        db = get_db()
-
-    product_category = None
-
-    # Enriquecer com dados do produto
+    # Dados do produto
     product = db.products.find_one({"_id": document["product_id"]})
     if product:
         product_photo_url = product.get("photo_url")
@@ -36,15 +35,14 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
     # Dados do consumidor
     consumer = db.users.find_one({"_id": document["consumer_id"]})
     if consumer:
-        consumer_name = consumer.get("name") or None  # só mostra se tiver nome real
+        consumer_name = consumer.get("name")
         consumer_phone = consumer.get("phone")
 
-    # Dados do produtor
-    producer = db.producers.find_one({"_id": document["producer_id"]})
+    # Dados do produtor (é um user)
+    producer = db.users.find_one({"_id": document["producer_id"]})
     if producer:
-        producer_user = db.users.find_one({"_id": producer.get("user_id")})
-        producer_name = (producer_user.get("name") if producer_user else None) or producer.get("city", "")
-        producer_phone = producer_user.get("phone") if producer_user else None
+        producer_name = producer.get("name")
+        producer_phone = producer.get("phone")
         producer_photo_url = producer.get("photo_url")
 
     return ReservationResponse(
@@ -80,7 +78,7 @@ def create_reservation(payload: ReservationCreate, user: dict = Depends(get_curr
 
     reservation = {
         "consumer_id": user["_id"],
-        "producer_id": product["producer_id"],
+        "producer_id": product["user_id"],
         "product_id": product["_id"],
         "product_name": product["name"],
         "quantity": payload.quantity,
@@ -95,14 +93,14 @@ def create_reservation(payload: ReservationCreate, user: dict = Depends(get_curr
     created = db.reservations.find_one({"_id": result.inserted_id})
 
     # Push notification para o produtor (fire-and-forget)
-    producer = db.producers.find_one({"_id": product["producer_id"]})
-    if producer and producer.get("expo_push_token"):
+    producer_user = db.users.find_one({"_id": product["user_id"]})
+    if producer_user and producer_user.get("expo_push_token"):
         threading.Thread(
             target=send_push_notification,
             args=(
-                producer["expo_push_token"],
-                "Novo pedido! 📦",
-                f"{product['name']} (x{payload.quantity}) — {payload.pickup_location}",
+                producer_user["expo_push_token"],
+                "Novo pedido!",
+                f"{product['name']} (x{payload.quantity}) - {payload.pickup_location}",
             ),
             daemon=True,
         ).start()
@@ -119,11 +117,9 @@ def list_my_reservations(user: dict = Depends(get_current_user)):
 
 @router.get("/producer", response_model=list[ReservationResponse])
 def list_producer_reservations(user: dict = Depends(get_current_user)):
+    """Pedidos recebidos pelo usuario (como vendedor)."""
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
-    items = list(db.reservations.find({"producer_id": producer["_id"]}).sort("created_at", -1))
+    items = list(db.reservations.find({"producer_id": user["_id"]}).sort("created_at", -1))
     return [_to_response(item) for item in items]
 
 
@@ -134,38 +130,13 @@ def update_reservation_status(
     user: dict = Depends(get_current_user),
 ):
     db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-    if not producer:
-        raise HTTPException(status_code=404, detail="Perfil de produtor nao encontrado")
-
-    reservation = db.reservations.find_one({"_id": ObjectId(reservation_id), "producer_id": producer["_id"]})
+    reservation = db.reservations.find_one({"_id": ObjectId(reservation_id), "producer_id": user["_id"]})
     if not reservation:
         raise HTTPException(status_code=404, detail="Reserva nao encontrada")
 
     db.reservations.update_one(
         {"_id": reservation["_id"]},
         {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc)}},
-    )
-    updated = db.reservations.find_one({"_id": reservation["_id"]})
-    return _to_response(updated)
-
-
-@router.patch("/{reservation_id}/cancel", response_model=ReservationResponse)
-def cancel_reservation(reservation_id: str, user: dict = Depends(get_current_user)):
-    """Consumidor cancela sua própria reserva (somente status pending)."""
-    db = get_db()
-    reservation = db.reservations.find_one({
-        "_id": ObjectId(reservation_id),
-        "consumer_id": user["_id"],
-    })
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reserva não encontrada")
-    if reservation["status"] != "pending":
-        raise HTTPException(status_code=400, detail="Só é possível cancelar reservas pendentes")
-
-    db.reservations.update_one(
-        {"_id": reservation["_id"]},
-        {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}},
     )
     updated = db.reservations.find_one({"_id": reservation["_id"]})
     return _to_response(updated)

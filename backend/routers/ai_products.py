@@ -21,12 +21,7 @@ async def ai_generate_product(payload: AIProductGenerateRequest, user: dict = De
     if not _is_valid_photo_url(payload.photo_url):
         raise HTTPException(status_code=422, detail="photo_url invalida")
 
-    db = get_db()
-    producer = db.producers.find_one({"user_id": user["_id"]})
-
-    city = payload.city
-    if (not city) and producer:
-        city = producer.get("city")
+    city = payload.city or user.get("city")
 
     try:
         result = await asyncio.wait_for(generate_ai_product(payload.photo_url, city), timeout=90)
@@ -38,4 +33,4 @@ async def ai_generate_product(payload: AIProductGenerateRequest, user: dict = De
         print(f"[ai_products.ai_generate_product] erro interno: {exc}")
         raise HTTPException(status_code=503, detail="IA indisponivel no momento") from exc
 
-    return AIProductGenerateResponse(**result)
+    return result
