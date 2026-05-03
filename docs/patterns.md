@@ -30,7 +30,6 @@ terraVivaDev/
 
 - **Dependency Injection** via FastAPI `Depends()`:
   - `get_current_user` — extrai e valida JWT do header `Authorization`
-  - `require_role("admin")` — guard por role
 
 - **Pydantic Models** para validação de input/output (request/response)
 
@@ -62,7 +61,7 @@ backend/
 ├── main.py          → App FastAPI, middleware, include routers
 ├── config.py        → Settings (env vars → Pydantic)
 ├── database.py      → Conexão MongoDB (singleton)
-├── dependencies.py  → Auth guards (get_current_user, require_role)
+├── dependencies.py  → Auth guard (get_current_user)
 ├── models.py        → Todos os schemas Pydantic (request + response)
 ├── utils.py         → JWT, OTP, push notification, phone normalizer
 ├── seed.py          → Script de seed para dev

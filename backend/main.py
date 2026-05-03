@@ -30,9 +30,17 @@ app.include_router(fair_config.router, prefix="/fair-config", tags=["fair-config
 
 @app.on_event("startup")
 def startup_indexes():
+    from utils import generate_short_code
     db = get_db()
     db.otp_codes.create_index("created_at", expireAfterSeconds=300)
     db.users.create_index("phone", unique=True)
+    db.users.create_index("short_code", unique=True, sparse=True)
+    # Migração: gera short_code para usuários que ainda não possuem
+    for user in db.users.find({"short_code": {"$exists": False}}):
+        db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"short_code": generate_short_code(db)}},
+        )
 
 
 @app.get("/health")

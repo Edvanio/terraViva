@@ -6,7 +6,7 @@
 
 O diferencial principal é o **cadastro inteligente de produtos via IA**: o produtor fotografa o produto e a IA (GPT-4O Vision) preenche automaticamente nome, descrição, categoria, cores e preço sugerido.
 
-**Status**: Piloto com 2-5 produtores e ~50 consumidores.
+**Status**: Em produ\u00e7\u00e3o est\u00e1vel no DigitalOcean. Feiras org\u00e2nicas do Sul de SC.\n\n**Modelo**: Dom\u00ednio \u00fanico para todas as feiras. Sem admin \u2014 produtores se auto-gerenciam. Pagamentos informativos (combina via WhatsApp).
 
 ## Documentação Disponível
 

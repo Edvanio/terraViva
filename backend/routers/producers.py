@@ -11,6 +11,8 @@ from database import get_db
 from dependencies import get_current_user
 from models import UserProfileResponse, UserProfileUpdate
 
+from utils import generate_short_code
+
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE_MB = 5
 
@@ -51,6 +53,7 @@ def _upload_to_spaces(content: bytes, filename: str, content_type: str) -> str:
 def _to_response(user: dict) -> UserProfileResponse:
     return UserProfileResponse(
         id=str(user["_id"]),
+        short_code=user.get("short_code"),
         phone=user.get("phone", ""),
         name=user.get("name"),
         bio=user.get("bio"),
@@ -66,6 +69,11 @@ def _to_response(user: dict) -> UserProfileResponse:
 
 @router.get("/profile", response_model=UserProfileResponse)
 def get_profile(user: dict = Depends(get_current_user)):
+    db = get_db()
+    if not user.get("short_code"):
+        code = generate_short_code(db)
+        db.users.update_one({"_id": user["_id"]}, {"$set": {"short_code": code}})
+        user["short_code"] = code
     return _to_response(user)
 
 

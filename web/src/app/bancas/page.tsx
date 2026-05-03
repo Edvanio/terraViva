@@ -2,6 +2,8 @@ import type { Banca } from "@/lib/types";
 import { BancaFilter } from "@/components/BancaFilter";
 import { apiGet } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default async function BancasPage() {
   const bancas = await apiGet<Banca[]>("/bancas").catch(() => []);
 

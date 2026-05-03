@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { CATEGORIES, getCategoryIcon } from "@/components/CategoryChip";
 import { AIProductModal } from "@/components/AIProductModal";
+import { ShareButton } from "@/components/ShareButton";
 import { parsePrice } from "@/lib/format";
 
 interface Order {
@@ -66,6 +67,8 @@ export default function MinhaBancaPage() {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [producerCity, setProducerCity] = useState<string>("");
+  const [producerName, setProducerName] = useState<string>("");
+  const [bancaShortCode, setBancaShortCode] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const { toast } = useToast();
@@ -125,6 +128,8 @@ export default function MinhaBancaPage() {
         return;
       }
       setProducerCity(profile.city || "");
+      setProducerName(profile.name || "");
+      setBancaShortCode(profile.short_code ?? null);
     } else {
       router.replace(`/perfil?redirect=${encodeURIComponent("/minha-banca")}`);
       return;
@@ -251,9 +256,14 @@ export default function MinhaBancaPage() {
           <h1 className="text-2xl font-bold text-textPrimary">Minha Banca</h1>
           <p className="text-sm text-textSecondary">Gerencie pedidos e produtos</p>
         </div>
-        <Link href="/perfil">
-          <Button variant="secondary" size="sm">✏️ Editar perfil</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {bancaShortCode && products.some((p) => p.is_active) && (
+            <ShareButton name={producerName} shortCode={bancaShortCode} />
+          )}
+          <Link href="/perfil">
+            <Button variant="secondary" size="sm">✏️ Editar perfil</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Tabs */}

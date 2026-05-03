@@ -4,6 +4,11 @@ import { HomeActions } from "@/components/HomeActions";
 import { BancaFilter } from "@/components/BancaFilter";
 import { apiGet } from "@/lib/api";
 
+// Garante que esta página nunca seja pré-renderizada estaticamente no build.
+// Sem isso, o Next.js tenta renderizar durante `npm run build` quando o backend
+// não está disponível, resultando em lista de bancas vazia em produção.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [bancas, fairConfig] = await Promise.all([
     apiGet<Banca[]>("/bancas").catch(() => []),

@@ -23,6 +23,7 @@ def list_bancas():
         categories = list({p.get("category") for p in products if p.get("category")})
         result.append(BancaResponse(
             id=str(user["_id"]),
+            short_code=user.get("short_code"),
             name=user.get("name"),
             bio=user.get("bio"),
             city=user.get("city"),
@@ -38,9 +39,16 @@ def list_bancas():
 
 @router.get("/{banca_id}")
 def get_banca(banca_id: str):
-    """Detalhe de uma banca (usuario) com seus produtos ativos."""
+    """Detalhe de uma banca (usuario) com seus produtos ativos.
+    Aceita tanto o ObjectId quanto o short_code."""
     db = get_db()
-    user = db.users.find_one({"_id": ObjectId(banca_id)})
+    user = None
+    try:
+        user = db.users.find_one({"_id": ObjectId(banca_id)})
+    except Exception:
+        pass
+    if not user:
+        user = db.users.find_one({"short_code": banca_id})
     if not user:
         raise HTTPException(status_code=404, detail="Banca nao encontrada")
 
@@ -50,6 +58,7 @@ def get_banca(banca_id: str):
 
     return {
         "id": str(user["_id"]),
+        "short_code": user.get("short_code"),
         "name": user.get("name"),
         "bio": user.get("bio"),
         "city": user.get("city"),

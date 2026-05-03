@@ -1,7 +1,10 @@
 import Image from "next/image";
 import type { Banca } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
+import { ShareButton } from "@/components/ShareButton";
 import { apiGet } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 export default async function BancaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -55,9 +58,14 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
               <h1 className="font-display text-2xl font-bold text-textPrimary">{displayName}</h1>
               <p className="mt-1 text-sm text-textSecondary leading-relaxed">{banca.bio || "Produtos frescos direto da nossa terra pra você 🌱"}</p>
             </div>
-            <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-amber-light px-3 py-1.5">
-              <span className="text-amber text-base">&#9733;</span>
-              <span className="font-bold text-textPrimary text-sm">4.9</span>
+            <div className="flex flex-shrink-0 flex-col items-end gap-2">
+              <div className="flex items-center gap-1.5 rounded-full bg-amber-light px-3 py-1.5">
+                <span className="text-amber text-base">&#9733;</span>
+                <span className="font-bold text-textPrimary text-sm">4.9</span>
+              </div>
+              {banca.short_code && (
+                <ShareButton name={displayName} shortCode={banca.short_code} />
+              )}
             </div>
           </div>
 

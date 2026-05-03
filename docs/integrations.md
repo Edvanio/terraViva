@@ -15,8 +15,7 @@
 **Collections**:
 | Collection | Propósito |
 |------------|-----------|
-| `users` | Usuários (phone, role, name) |
-| `producers` | Perfil expandido dos produtores |
+| `users` | Usuários (phone, name, bio, city, photo, payment_methods, etc.) |
 | `products` | Produtos das bancas |
 | `reservations` | Reservas/pedidos |
 | `otp_codes` | Códigos OTP temporários (TTL 5min) |
@@ -118,7 +117,6 @@ dadosbimdoctor/
 ```json
 {
   "sub": "user_id (ObjectId string)",
-  "role": "consumer|producer|admin",
   "phone": "48999110001",
   "exp": 1234567890
 }
