@@ -12,7 +12,7 @@ trap cleanup TERM INT
 
 # ─── Frontend (Next.js standalone) ────────────────────────────────
 echo "[entrypoint] Iniciando frontend (Next.js)..."
-NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1 node /app/web/server.js &
+NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1 API_INTERNAL_URL=http://127.0.0.1:8000 node /app/web/server.js &
 FRONTEND_PID=$!
 
 # ─── Backend (Uvicorn / FastAPI) ──────────────────────────────────
