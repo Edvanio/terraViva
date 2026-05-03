@@ -484,7 +484,7 @@ export default function MinhaBancaPage() {
                 <input
                   ref={photoInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/*"
                   className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadProductPhoto(f); }}
                 />

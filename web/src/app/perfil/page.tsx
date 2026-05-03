@@ -297,7 +297,7 @@ export default function PerfilPage() {
         <input
           ref={coverInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/*"
           className="hidden"
           onChange={handleCoverChange}
         />
@@ -351,7 +351,7 @@ export default function PerfilPage() {
           <input
             ref={avatarInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
             className="hidden"
             onChange={handleAvatarChange}
           />
