@@ -2,148 +2,164 @@
 
 ## Serviços Externos
 
-### MongoDB Atlas
-
-**Tipo**: Banco de dados (cloud managed)
-**Propósito**: Persistência de todos os dados da aplicação
-**Protocolo**: MongoDB Wire Protocol via `pymongo`
-**Cluster**: `servercosthml.sb8nc.mongodb.net`
-**Database**: `terra_viva`
-**Dependência**: Crítica — sem MongoDB nada funciona
-**Tratamento de Falhas**: Nenhum retry explícito; conexão usa pool do pymongo com defaults
-
-**Collections**:
-| Collection | Propósito |
-|------------|-----------|
-| `users` | Usuários (phone, name, bio, city, photo, payment_methods, etc.) |
-| `products` | Produtos das bancas |
-| `reservations` | Reservas/pedidos |
-| `otp_codes` | Códigos OTP temporários (TTL 5min) |
-| `fair_configs` | Configuração da feira por cidade |
-
----
-
-### DigitalOcean Spaces (S3-compatible)
-
-**Tipo**: Object Storage (imagens)
-**Propósito**: Armazenamento de fotos de perfil e produtos
-**Protocolo**: S3 API via `boto3`
-**Endpoint**: `https://nyc3.digitaloceanspaces.com`
-**Bucket**: `dadosbimdoctor`
-**Dependência**: Alta — upload de fotos falha sem acesso
-**Tratamento de Falhas**: HTTPException 502 propagada ao usuário
-
-**Estrutura**:
-```
-dadosbimdoctor/
-└── terraviva/
-    ├── profiles/   ← fotos de perfil (producers)
-    └── products/   ← fotos de produtos
-```
-
-**URLs públicas**: `https://dadosbimdoctor.nyc3.digitaloceanspaces.com/terraviva/products/<filename>`
-
----
-
 ### OpenAI API
+**Tipo**: API REST (SDK Python)  
+**Propósito**: Geração inteligente de produtos a partir de fotos  
+**Modelos usados**:
+- `gpt-4o` — Vision (análise de imagem → metadata do produto)
+- `dall-e-2` — Geração de imagem de fundo estilizada
 
-**Tipo**: API REST (IA generativa)
-**Propósito**: Análise de fotos de produtos (Vision) + geração/aprimoramento de imagem
-**Protocolo**: HTTPS via SDK `openai`
-**Modelos**:
-  - `gpt-4o` — Análise de imagem (identifica produto, sugere nome/descrição/preço)
-  - `gpt-image-1` — Geração/aprimoramento de imagem do produto
-**Dependência**: Feature-level — cadastro IA não funciona, mas app opera normalmente sem
-**Tratamento de Falhas**: Timeout de 90s + fallback gracioso (503)
-**Custo**: Pay-per-use (tokens de input + imagem)
+**Dados enviados**: URL da foto do produto, cidade do produtor  
+**Dados recebidos**: Nome, descrição, categoria, preço sugerido, cores, imagem gerada  
+**Dependência**: Opcional (funcionalidade de IA desativada graciosamente sem API key)  
+**Tratamento de falhas**:
+- Timeout de 90 segundos (`asyncio.wait_for`)
+- Retorna HTTP 503 se indisponível
+- Fallback: produtor cadastra produto manualmente
 
----
-
-### Expo Push Notification API
-
-**Tipo**: API REST
-**Propósito**: Notificar produtores sobre novos pedidos
-**Protocolo**: HTTPS (`https://exp.host/--/api/v2/push/send`)
-**Dependência**: Baixa — fire-and-forget, não bloqueia fluxo
-**Tratamento de Falhas**: Thread daemon; exceções logadas como warning, nunca propagadas
-**Status atual**: Funcional apenas no app mobile (futuro)
+**Configuração**: `OPENAI_API_KEY` env var
 
 ---
 
-### DigitalOcean App Platform
+### DigitalOcean Spaces (S3-Compatible)
+**Tipo**: Object Storage API (SDK boto3)  
+**Propósito**: Armazenamento de imagens (fotos de perfil, capas, produtos)  
+**Protocolo**: S3 API via `boto3`
 
-**Tipo**: PaaS (hosting)
-**Propósito**: Deploy e hosting do container unificado
-**Protocolo**: Git push → build automático
-**Configuração**: `.do/app.yaml`
-**Dependência**: Infraestrutura — é onde a aplicação roda
-**Trigger**: Push na branch `develop` → auto-deploy
+**Dados enviados**: Imagens processadas (resize/compress via Pillow)  
+**Dados recebidos**: URL pública da imagem  
+**Dependência**: Crítica (sem Spaces, upload de fotos não funciona)  
+**Tratamento de falhas**: Exceção propagada ao frontend ("Erro ao enviar foto")
+
+**Configuração**:
+- `DO_SPACES_KEY` — Access key
+- `DO_SPACES_SECRET` — Secret key
+- `DO_SPACES_ENDPOINT` — `https://nyc3.digitaloceanspaces.com`
+- `DO_SPACES_BUCKET` — `dadosbimdoctor`
+- `DO_SPACES_FOLDER` — `terraviva/profiles`
+- `DO_SPACES_PRODUCTS_FOLDER` — `terraviva/products`
+
+---
+
+### MongoDB Atlas (DigitalOcean Managed)
+**Tipo**: Database as a Service  
+**Propósito**: Persistência principal (usuários, produtos, reservas, configs)  
+**Protocolo**: MongoDB Wire Protocol via `pymongo` (sync)
+
+**Cluster**: `db-mongodb-bimdoctor-ce100a5c.mongo.ondigitalocean.com`  
+**Database**: `terra_viva`  
+**Dependência**: Crítica  
+**Tratamento de falhas**: Conexão falha = app não inicia (fail fast)
+
+**Configuração**: `MONGODB_URL` env var (connection string SRV com TLS)
 
 ---
 
-## Integrações Internas (entre componentes)
+### Expo Push Notifications
+**Tipo**: HTTP API  
+**Propósito**: Enviar notificações push ao produtor quando recebe novo pedido  
+**Protocolo**: POST para `https://exp.host/--/api/v2/push/send`
 
-### nginx → Next.js (frontend)
+**Dados enviados**: `expo_push_token` do produtor, título, body  
+**Dependência**: Opcional (falha silenciosa)  
+**Tratamento de falhas**: Fire-and-forget em thread daemon, não bloqueia response  
 
-| Rota | Destino |
-|------|---------|
-| `/*` | `http://127.0.0.1:3000` |
-| `/api/auth/session` | `http://127.0.0.1:3000` (exact match) |
-| `/api/auth/logout` | `http://127.0.0.1:3000` (exact match) |
-
-### nginx → FastAPI (backend)
-
-| Rota | Destino |
-|------|---------|
-| `/api/*` | `http://127.0.0.1:8000/` (strip prefix) |
-| `/uploads/*` | `http://127.0.0.1:8000/uploads/` |
-
-### Next.js Server Components → FastAPI
-
-- URL interna: `http://127.0.0.1:8000` (env `API_INTERNAL_URL`)
-- Sem auth para rotas públicas (`/bancas`, `/fair-config`)
-- Com auth (cookie) para rotas protegidas
-
-### Browser → Next.js API Routes
-
-- `POST /api/auth/session` — Grava cookie httpOnly com JWT
-- `DELETE /api/auth/session` — Limpa cookie
+**Configuração**: Token do dispositivo salvo em `users.expo_push_token`
 
 ---
+
+## Integrações Internas (Intra-Container)
+
+### nginx → FastAPI
+**Tipo**: Proxy reverso  
+**Rota**: `/api/*` → `http://127.0.0.1:8000/`  
+**Detalhes**: Strip `/api` prefix, forward headers (`X-Real-IP`, `X-Forwarded-For`)
+
+### nginx → Next.js
+**Tipo**: Proxy reverso  
+**Rotas**:
+- `/*` → `http://127.0.0.1:3000` (páginas e assets)
+- `/api/auth/session` → `http://127.0.0.1:3000` (API route Next.js)
+
+### Next.js SSR → FastAPI
+**Tipo**: HTTP fetch interno  
+**URL**: `http://127.0.0.1:8000` (env `API_INTERNAL_URL`)  
+**Propósito**: Server Components buscam dados diretamente do backend sem passar por nginx  
+**Configuração**: `API_INTERNAL_URL` passada explicitamente no `entrypoint.sh`
+
+### Next.js Client → FastAPI
+**Tipo**: HTTP fetch via browser  
+**URL**: `/api/*` (relativo, passa por nginx)  
+**Propósito**: Client Components fazem requests autenticadas via browser  
+**Configuração**: `NEXT_PUBLIC_API_URL=/api` (build-time)
+
+---
+
+## Dependências Externas Futuras (Não Implementadas)
+
+| Serviço | Propósito | Status |
+|---------|-----------|--------|
+| Twilio/Vonage | Envio real de SMS para OTP | Planejado |
+| Gateway de Pagamento | Pix automático | Planejado |
+| WhatsApp Business API | Notificações via WhatsApp | Avaliando |
+
+---
+
+## Diagrama de Integrações
+
+```
+                    ┌─────────────────┐
+                    │   Consumidor    │
+                    │  (Browser/App)  │
+                    └────────┬────────┘
+                             │ HTTPS
+                             ▼
+                    ┌─────────────────┐
+                    │  nginx (:80)    │
+                    │  (DO Container) │
+                    └──┬──────────┬───┘
+                       │          │
+              /api/*   │          │  /*
+                       ▼          ▼
+              ┌─────────┐  ┌──────────┐
+              │ FastAPI  │  │ Next.js  │
+              │ (:8000)  │  │ (:3000)  │
+              └──┬───┬───┘  └──────────┘
+                 │   │           │
+                 │   │    SSR fetch (127.0.0.1:8000)
+                 │   │           │
+    ┌────────────┘   └───────────┼──────────┐
+    │                            │          │
+    ▼                            ▼          ▼
+┌────────┐              ┌──────────┐  ┌──────────┐
+│MongoDB │              │ OpenAI   │  │DO Spaces │
+│ Atlas  │              │ (GPT-4o) │  │  (S3)    │
+└────────┘              └──────────┘  └──────────┘
+    │
+    │ (push token)
+    ▼
+┌────────────┐
+│ Expo Push  │
+│ API        │
+└────────────┘
+```
 
 ## Contratos de Integração
 
-### JWT Token Payload
+### OpenAI Vision Request
+O prompt enviado ao GPT-4o inclui instruções para retornar JSON com:
+- `name` (string) — nome do produto
+- `description` (string) — descrição comercial
+- `category` (enum) — uma das 12 categorias fixas
+- `suggested_price` (float) — preço em R$ baseado na região
+- `color_primary` (hex) — cor dominante do produto
+- `color_accent` (hex) — cor de destaque
+
+### Expo Push Notification
 ```json
 {
-  "sub": "user_id (ObjectId string)",
-  "phone": "48999110001",
-  "exp": 1234567890
+  "to": "ExponentPushToken[xxx]",
+  "title": "Novo pedido!",
+  "body": "Queijo Colonial (x2) - feira"
 }
 ```
-
-### OpenAI Vision Response (esperado)
-```json
-{
-  "name": "Alface Crespa",
-  "description": "Alface crespa orgânica...",
-  "category": "Verduras",
-  "color_primary": "#4CAF50",
-  "color_accent": "#8BC34A",
-  "suggested_price": 5.0,
-  "suggested_price_note": "Preço médio para feiras em SC"
-}
-```
-
----
-
-## Resiliência
-
-| Componente | Estratégia |
-|------------|-----------|
-| MongoDB | Pool de conexões pymongo (retry interno) |
-| OpenAI | Timeout 90s + HTTP 503 ao usuário |
-| DO Spaces | HTTP 502 ao usuário se upload falha |
-| Push Notifications | Fire-and-forget (thread daemon, log warning) |
-| Startup | Entrypoint aguarda backend (health check loop 30s) antes de nginx |
-| Bancas (SSR) | `.catch(() => [])` — se API falha, mostra lista vazia |

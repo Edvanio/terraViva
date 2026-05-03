@@ -2,54 +2,69 @@
 
 ## Visão Geral
 
-**Terra Viva** é um marketplace de agricultura familiar que conecta produtores rurais diretamente a consumidores da feira de São Ludgero/SC. O sistema funciona como um mecanismo de **reserva** — o consumidor escolhe produtos pelo app web, reserva, e retira presencialmente na feira.
+O **Terra Viva** é uma plataforma digital comunitária que conecta produtores rurais a consumidores locais, funcionando como a "feira digital" de São Ludgero/SC. Consumidores navegam pelas bancas dos produtores, reservam produtos online e retiram na feira física presencial.
 
-O diferencial principal é o **cadastro inteligente de produtos via IA**: o produtor fotografa o produto e a IA (GPT-4O Vision) preenche automaticamente nome, descrição, categoria, cores e preço sugerido.
+O diferencial principal é o **cadastro inteligente de produtos via IA**: o produtor fotografa o produto e a IA (GPT-4o Vision) preenche automaticamente nome, descrição, categoria, cores e preço sugerido.
 
-**Status**: Em produ\u00e7\u00e3o est\u00e1vel no DigitalOcean. Feiras org\u00e2nicas do Sul de SC.\n\n**Modelo**: Dom\u00ednio \u00fanico para todas as feiras. Sem admin \u2014 produtores se auto-gerenciam. Pagamentos informativos (combina via WhatsApp).
+**Status**: Em produção estável na DigitalOcean.  
+**Modelo**: Comunitário, gratuito. Sem painel admin — produtores se autogerenciam. Pagamentos são combinados presencialmente ou via WhatsApp (não há gateway de pagamento).
+
+## Estrutura do Monorepo
+
+```
+terraVivaDev/
+├── backend/          → API REST (FastAPI + Python 3.11 + MongoDB)
+├── web/              → PWA responsivo (Next.js 15 + Tailwind)
+├── app/              → App mobile (React Native + Expo 52)
+├── shared/           → Tipos TypeScript compartilhados
+├── nginx/            → Configuração de proxy reverso
+├── deploy/           → Docker Compose para DigitalOcean
+├── docs/             → Esta documentação
+├── Dockerfile        → Build multi-stage (container único)
+├── entrypoint.sh     → Orquestra backend + frontend + nginx
+└── docker-compose.yml → Dev local
+```
 
 ## Documentação Disponível
 
 ### Arquitetura e Stack
-- [Stack Tecnológica](stack.md) — Tecnologias, frameworks e ferramentas utilizadas
+- [Stack Tecnológica](stack.md) — Tecnologias, frameworks e ferramentas
 - [Padrões de Design](patterns.md) — Padrões arquiteturais e de código
 
 ### Funcionalidades e Regras
-- [Funcionalidades](features.md) — Descrição das funcionalidades principais
-- [Regras de Negócio](business-rules.md) — Regras de negócio implementadas
+- [Funcionalidades](features.md) — Funcionalidades principais e secundárias
+- [Regras de Negócio](business-rules.md) — Regras, validações e políticas
 
-### Integrações
-- [Integrações](integrations.md) — Comunicação com serviços externos
-
-### APIs
-- [Especificação de APIs](apis.md) — Endpoints, contratos e exemplos
+### APIs e Integrações
+- [Especificação de APIs](apis.md) — Endpoints, autenticação e exemplos
+- [Integrações](integrations.md) — Serviços externos e dependências
 
 ## Links Rápidos
 
-| Item | URL |
-|------|-----|
+| Item | Valor |
+|------|-------|
 | Produção | https://terra-viva-3n3ko.ondigitalocean.app |
 | Repositório | https://github.com/Edvanio/terraViva |
-| Branch de deploy | `develop` (auto-deploy via DO App Platform) |
-| Banco de dados | MongoDB Atlas (cluster `servercosthml`) |
-| Storage de imagens | DigitalOcean Spaces (`dadosbimdoctor/terraviva/`) |
+| Branch deploy | `main` (auto-deploy via DO App Platform) |
+| Branch desenvolvimento | `develop` |
+| Banco de dados | MongoDB Atlas (DigitalOcean Managed) |
+| Storage de imagens | DigitalOcean Spaces (S3-compatible) |
+| IA | OpenAI GPT-4o Vision + DALL-E 2 |
 
-## Ambiente de Desenvolvimento
+## Ambientes
 
-```bash
-# Subir tudo com Docker Compose
-docker-compose up --build
+| Ambiente | Descrição | Config |
+|----------|-----------|--------|
+| **Produção** | Container único na DO App Platform | `.do/app.yaml` + envs no painel DO |
+| **Dev local** | Docker Compose com mesmo MongoDB Atlas | `.envdev` + `docker-compose.yml` |
 
-# Acessar
-# Web: http://localhost:3000
-# API: http://localhost:8000
-# OTP padrão (dev): 123456
+## Fluxo de Deploy
+
+```
+develop → PR → main → DigitalOcean auto-deploy
 ```
 
-## Documentação Legada (referência histórica)
-
-- [ARQUITETURA.md](ARQUITETURA.md)
-- [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md)
-- [FLUXO-APP.md](FLUXO-APP.md)
-- [PLANEJAMENTO-UX.md](PLANEJAMENTO-UX.md)
-- [TERRA-VIVA-PROJETO.md](TERRA-VIVA-PROJETO.md)
+O deploy gera um único container Docker com:
+- **nginx** (:80) — proxy reverso, serve static e roteia `/api/` → backend, `/` → frontend
+- **uvicorn** (:8000) — FastAPI backend com 2 workers
+- **node** (:3000) — Next.js standalone SSR

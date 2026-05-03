@@ -1,164 +1,140 @@
 # Regras de Negócio
 
-## Regras Críticas
+## Regras de Autenticação
 
-### 1. Somente produtores com produtos ativos aparecem
+### RN-AUTH-01: Login exclusivamente por OTP
+**Descrição**: Não existe senha. Todo login é feito por código OTP de 6 dígitos enviado ao telefone.  
+**Justificativa**: Público-alvo rural, pouco familiarizado com gestão de senhas.  
+**Implementação**: `backend/routers/auth.py`  
+**Validações**:
+- Telefone normalizado (apenas dígitos, mínimo 10)
+- OTP expira em 5 minutos (TTL index no MongoDB)
+- OTP gerado com `secrets.randbelow()` (criptograficamente seguro)
+- Em dev: aceita código fixo via `DEV_OTP_DEFAULT` (vazio em produção)
 
-**Descrição**: A listagem pública de bancas (`GET /bancas`) só retorna produtores que tenham pelo menos 1 produto com `is_active: true`.
+### RN-AUTH-02: Criação automática de usuário
+**Descrição**: Se o telefone não existe no banco ao verificar OTP, o usuário é criado automaticamente.  
+**Justificativa**: Eliminação de fricção no cadastro.  
+**Implementação**: `backend/routers/auth.py` → `verify_otp()`
 
-**Justificativa**: Evita exibir bancas vazias ao consumidor, mantendo a experiência limpa.
+### RN-AUTH-03: Sessão de longa duração
+**Descrição**: JWT e cookie duram 360 dias.  
+**Justificativa**: Público usa o app esporadicamente (1x/semana na feira). Re-login frequente causaria abandono.
 
-**Implementação**: `backend/routers/bancas.py` — loop filtra com `if not products: continue`
-
-**Exceção**: O detalhe da banca (`GET /bancas/:id`) sempre retorna, mesmo sem produtos.
-
----
-
-### 2. Reserva só pode ser criada para produto ativo
-
-**Descrição**: `POST /reservations` valida que o `product_id` existe E tem `is_active: True`.
-
-**Implementação**: `backend/routers/reservations.py` — `db.products.find_one({"_id": ..., "is_active": True})`
-
----
-
-### 3. Cancelamento apenas de reservas pendentes
-
-**Descrição**: O consumidor só pode cancelar reservas com status `pending`. Reservas `confirmed` ou `collected` não podem ser canceladas pelo consumidor.
-
-**Justificativa**: Após confirmação pelo produtor, há compromisso mútuo.
-
-**Implementação**: `backend/routers/reservations.py` — `cancel_reservation()` verifica `status != "pending"` → 400
+### RN-AUTH-04: Dual-token (cookie + localStorage)
+**Descrição**: Token armazenado em cookie httpOnly (para SSR/middleware) E em localStorage (para client components).  
+**Justificativa**: Next.js Server Components precisam do cookie; Client Components precisam enviar header Authorization nas fetch requests.
 
 ---
 
-### 4. Apenas o produtor dono pode alterar status da reserva
+## Regras de Produtos
 
-**Descrição**: `PUT /reservations/:id/status` exige que o usuário logado seja o produtor associado àquela reserva.
+### RN-PROD-01: Produto pertence a um único produtor
+**Descrição**: `products.user_id` referencia o produtor dono.  
+**Validação**: Apenas o dono pode editar/excluir seus produtos.
 
-**Implementação**: Busca `producer` pelo `user_id`, depois filtra reserva por `producer_id`.
+### RN-PROD-02: Visibilidade via `is_active`
+**Descrição**: Produto com `is_active: false` não aparece nas bancas públicas.  
+**Uso**: Produtor marca como "esgotado" sem excluir.
 
----
+### RN-PROD-03: Estoque opcional
+**Descrição**: Campo `stock` pode ser `null` (estoque ilimitado) ou numérico.  
+**Implementação**: UI permite toggle entre "ilimitado" e quantidade específica.
 
-### 5. Usuário é criado automaticamente no primeiro login
+### RN-PROD-04: Categorias fixas
+**Descrição**: Lista pré-definida de categorias:
+- `hortifruti`, `queijos`, `paes`, `doces`, `embutidos`, `conservas`, `colonial`, `bebidas`, `ovos`, `artesanal`, `temperos`, `outros`
 
-**Descrição**: Se o telefone não existe em `users`, é criado no momento do `verify-otp`.
+**Implementação**: Validada no `openai_service.py` e no frontend.
 
-**Justificativa**: Zero fricção — não há cadastro separado. Qualquer pessoa com WhatsApp pode usar.
-
-**Implementação**: `backend/routers/auth.py` → `verify_otp()` faz `insert_one` se `find_one` retorna null.
-
----
-
-### 6. OTP expira em 5 minutos
-
-**Descrição**: Collection `otp_codes` tem índice TTL de 300 segundos.
-
-**Implementação**: `backend/main.py` → `startup_indexes()` cria `expireAfterSeconds=300`
-
----
-
-### 7. Perfil unificado na collection users
-
-**Descrição**: Não existe collection `producers` separada. Todo perfil (nome, bio, cidade, foto, pagamento, endereço) é salvo diretamente no documento da collection `users`. Qualquer usuário vira "produtor" automaticamente ao cadastrar pelo menos 1 produto.
-
-**Justificativa**: Simplifica UX — sem barreiras de role ou "se tornar produtor". Basta ter produto ativo.
-
-**Implementação**: `backend/routers/producers.py` — `PUT /producer/profile` atualiza direto em `db.users`.
+### RN-PROD-05: IA sugere, produtor confirma
+**Descrição**: A geração por IA é apenas sugestão. O produtor pode editar todos os campos antes de salvar.  
+**Timeout**: 90 segundos para resposta da OpenAI.
 
 ---
 
-## Validações e Restrições
+## Regras de Bancas
 
-| Validação | Onde | Regra |
-|-----------|------|-------|
-| Telefone | `utils.normalize_phone()` | Mínimo 10 dígitos (só números) |
-| OTP | `models.OtpVerify` | Exatamente 6 caracteres |
-| Preço do produto | `models.ProductCreate` | `> 0` (Field gt=0) |
-| Quantidade na reserva | `models.ReservationCreate` | `>= 1` (Field ge=1) |
-| Cores do produto | `routers/products.py` | Formato `#XXXXXX` (regex hex 6 dígitos) |
-| Upload de imagem | `routers/producers.py` | Máximo 5MB, tipos: jpeg/png/webp/gif |
-| URL da foto (IA) | `routers/ai_products.py` | Deve ter scheme http/https e host válido |
-| Cidade do produtor | `routers/producers.py` | Não pode ser vazia ao criar perfil |
-| Telefone único | Index MongoDB | `users.phone` — unique constraint |
+### RN-BANCA-01: Banca = Produtor com produtos
+**Descrição**: Uma "banca" é a visualização pública de um usuário que possui pelo menos um produto (ativo ou não).  
+**Implementação**: `GET /bancas` filtra `users` que têm `products` com `is_active: true`.
 
-## Políticas e Workflows
+### RN-BANCA-02: Banca sem produtos é acessível
+**Descrição**: Se um produtor existe mas não tem produtos ativos, a banca é acessível via URL direta (mostra "nenhum produto disponível").  
+**Implementação**: `GET /bancas/{id}` não retorna 404 por falta de produtos.
 
-### Fluxo de Vida de uma Reserva
+### RN-BANCA-03: Short code único
+**Descrição**: Cada usuário recebe um código de 5 caracteres (letras minúsculas + dígitos) gerado automaticamente.  
+**Validações**: Unicidade garantida por index unique + retry.  
+**Uso**: URL curta para compartilhamento.
 
+---
+
+## Regras de Reservas
+
+### RN-RES-01: Apenas consumidor logado pode reservar
+**Descrição**: Endpoint protegido por JWT.  
+**Middleware**: `web/middleware.ts` protege `/banca/*/reservar`.
+
+### RN-RES-02: Status machine
+**Descrição**: Fluxo de estados da reserva:
 ```
-[Consumidor cria]        [Produtor confirma]     [Na feira]
-    pending ──────────────→ confirmed ──────────→ collected
-       │                        │
-       │ [Consumidor cancela]   │ [Produtor cancela]
-       └──→ cancelled           └──→ cancelled
-```
-
-### Fluxo de Login
-
-```
-1. Consumidor informa telefone
-2. Backend gera OTP (6 dígitos) e salva em otp_codes
-3. Em dev: retorna código diretamente (DEV_OTP_DEFAULT=123456)
-4. Em prod: (A SER IMPLEMENTADO) enviar via WhatsApp Business API
-5. Consumidor digita código
-6. Backend valida → cria/busca user → gera JWT
-7. Frontend salva JWT em localStorage + cookie httpOnly
+pending → confirmed → collected
+pending → cancelled (pelo consumidor)
+confirmed → cancelled (pelo produtor)
 ```
 
-### Fluxo de Cadastro IA
+### RN-RES-03: Somente `pending` pode ser cancelado pelo consumidor
+**Descrição**: Consumidor só cancela pedidos que ainda não foram confirmados pelo produtor.  
+**Implementação**: `PATCH /reservations/{id}/cancel` verifica `status == "pending"` e `consumer_id == user._id`.
 
-```
-1. Produtor abre "Cadastro inteligente" na Minha Banca
-2. Seleciona/fotografa produto → upload para DO Spaces
-3. POST /products/ai-generate com photo_url
-4. GPT-4O Vision analisa → retorna JSON com metadados
-5. (Opcional) Imagem é aprimorada
-6. Produtor revisa campos sugeridos
-7. Confirma → POST /products cria produto real
-```
+### RN-RES-04: Somente produtor muda status para confirmed/collected
+**Descrição**: `PUT /reservations/{id}/status` verifica `producer_id == user._id`.
 
-## Cálculos e Algoritmos
+### RN-RES-05: Preço calculado no backend
+**Descrição**: `total_price = quantity × product.price` — calculado no momento da criação.  
+**Justificativa**: Evita manipulação de preço pelo frontend.
 
-### Preço Total da Reserva
-```python
-total_price = quantity * product["price"]
-```
+### RN-RES-06: Notificação push ao produtor
+**Descrição**: Ao criar reserva, produtor recebe push notification via Expo.  
+**Implementação**: Thread daemon fire-and-forget (não bloqueia response).
 
-### Categorias da Banca
-```python
-categories = list({p.get("category") for p in products if p.get("category")})
-```
-Calculado dinamicamente a partir dos produtos ativos — não é campo persistido.
+---
 
-**Categorias disponíveis (8)**:
-| value | label |
-|-------|-------|
-| `hortifruti` | Frutas e Verduras |
-| `padaria` | Pães e Doces |
-| `frios` | Queijos e Frios |
-| `carnes` | Carnes e Ovos |
-| `bebidas` | Bebidas |
-| `temperos` | Temperos e Ervas |
-| `conservas` | Conservas e Mel |
-| `outros` | Outros |
+## Regras da Feira
 
-## Regras de Domínio
+### RN-FEIRA-01: Configuração por cidade
+**Descrição**: Cada cidade tem sua configuração de feira (dia, horário, local, janela de pedidos).  
+**Implementação**: Collection `fair_configs` com filtro por `city` e `active: true`.
 
-### Sem Roles Explícitos
-- Não há conceito de roles (consumer/producer/admin)
-- Qualquer usuário pode comprar (reservar produtos)
-- Qualquer usuário se torna "produtor" ao ter ≥1 produto ativo
-- Não há aprovação ou barreira para vender
+### RN-FEIRA-02: Janela de pedidos
+**Descrição**: Pedidos só podem ser feitos dentro da janela definida (`order_window_open` / `order_window_close`).  
+**Implementação**: Frontend exibe banner de status (aberta/fechada). **Nota**: Validação backend da janela ainda não implementada — apenas informativo no frontend.
 
-### Pickup Locations
-- `feira` — Retirada na feira (local padrão)
-- `produtor` — Buscar na propriedade do produtor
-- `entrega` — Entrega em casa (futuro, nem todas as bancas oferecem)
+---
 
-### Payment Intent
-- `cash` — Dinheiro
-- `pix` — Pix (presencial, QR na hora)
-- `card` — Cartão (maquininha na feira)
+## Regras de Upload
 
-> **Importante**: Não há processamento de pagamento online. O `payment_intent` é apenas a intenção declarada — o pagamento acontece presencialmente.
+### RN-UPLOAD-01: Imagens processadas antes do upload
+**Descrição**: Imagens são processadas via Pillow (resize, compressão) antes de upload ao Spaces.  
+**Limite**: `client_max_body_size 10m` no nginx.
+
+### RN-UPLOAD-02: URLs públicas
+**Descrição**: Imagens ficam públicas no Spaces (ACL `public-read`).  
+**Estrutura**: `terraviva/profiles/{uuid}.{ext}` e `terraviva/products/{uuid}.{ext}`.
+
+---
+
+## Regras de Segurança
+
+### RN-SEC-01: Cookie secure em produção
+**Descrição**: Cookie de sessão usa `secure: true` em produção (HTTPS only).
+
+### RN-SEC-02: CORS restritivo
+**Descrição**: Apenas origens listadas em `CORS_ORIGINS` são aceitas.
+
+### RN-SEC-03: Token validado em cada request autenticada
+**Descrição**: `dependencies.py` → `get_current_user()` decodifica JWT e busca usuário no banco.
+
+### RN-SEC-04: DEV_OTP_DEFAULT vazio em produção
+**Descrição**: O código OTP fixo para desenvolvimento tem default vazio. Só funciona se explicitamente configurado via env var.
