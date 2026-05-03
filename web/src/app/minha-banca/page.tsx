@@ -400,8 +400,10 @@ export default function MinhaBancaPage() {
                     {/* Preço destaque */}
                     <p className="mt-2 text-xl font-bold text-primary">
                       R$ {order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      <span className="ml-1.5 text-sm font-normal text-textSecondary">{order.quantity}x</span>
                     </p>
+                    <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary-subtle px-2.5 py-0.5 text-sm font-semibold text-primary">
+                      📦 {order.quantity}x {order.product_name.split(" ")[0]}
+                    </span>
 
                     {/* Quem pediu + entrega + pagamento */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
