@@ -21,6 +21,16 @@ cd /app/backend
 uvicorn main:app --host 127.0.0.1 --port 8000 --workers 2 &
 BACKEND_PID=$!
 
+# ─── Aguarda backend estar pronto ─────────────────────────────────
+echo "[entrypoint] Aguardando backend ficar disponível..."
+for i in $(seq 1 30); do
+  if wget -q -O- http://127.0.0.1:8000/health > /dev/null 2>&1; then
+    echo "[entrypoint] Backend pronto."
+    break
+  fi
+  sleep 1
+done
+
 # ─── nginx ────────────────────────────────────────────────────────
 echo "[entrypoint] Iniciando nginx..."
 nginx -g "daemon off;" &
