@@ -4,6 +4,7 @@ import threading
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 
+from config import get_settings
 from database import get_db
 from dependencies import get_current_user
 from models import ReservationCreate, ReservationResponse, ReservationStatusUpdate
@@ -15,8 +16,31 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Helper: dispara notificação DB + push + WhatsApp em background
 # ---------------------------------------------------------------------------
-def _notify(db, user_id, notif_type: str, title: str, body: str, reservation_id, push_token: str | None = None, phone: str | None = None):
-    """Cria registro no DB e dispara push/WhatsApp de forma fire-and-forget."""
+PICKUP_LABEL = {
+    "feira": "🏪 Na feira",
+    "produtor": "🚜 Buscar no produtor",
+    "entrega": "🚚 Entrega em domicílio",
+}
+PAYMENT_LABEL = {
+    "pix": "💸 Pix",
+    "cash": "💵 Dinheiro",
+    "card": "💳 Cartão",
+}
+
+def _notify(
+    db,
+    user_id,
+    notif_type: str,
+    title: str,
+    body: str,
+    reservation_id,
+    push_token: str | None = None,
+    phone: str | None = None,
+    whatsapp_msg: str | None = None,
+):
+    """Cria registro no DB, dispara push e WhatsApp de forma fire-and-forget.
+    Se whatsapp_msg for fornecido, usa-o; caso contrário monta mensagem simples.
+    """
     db.notifications.insert_one({
         "user_id": user_id,
         "type": notif_type,
@@ -29,8 +53,8 @@ def _notify(db, user_id, notif_type: str, title: str, body: str, reservation_id,
     if push_token:
         threading.Thread(target=send_push_notification, args=(push_token, title, body), daemon=True).start()
     if phone:
-        whatsapp_msg = f"*{title}*\n{body}"
-        threading.Thread(target=send_whatsapp, args=(phone, whatsapp_msg), daemon=True).start()
+        msg = whatsapp_msg or f"*{title}*\n{body}"
+        threading.Thread(target=send_whatsapp, args=(phone, msg), daemon=True).start()
 
 
 
@@ -120,8 +144,29 @@ def create_reservation(payload: ReservationCreate, user: dict = Depends(get_curr
     # Notifica o produtor: DB + push + WhatsApp
     producer_user = db.users.find_one({"_id": product["user_id"]})
     consumer_name = user.get("name") or "Cliente"
+    consumer_phone = user.get("phone") or ""
+    app_url = get_settings().app_url
+    pickup = PICKUP_LABEL.get(payload.pickup_location, payload.pickup_location)
+    payment = PAYMENT_LABEL.get(payload.payment_intent, payload.payment_intent)
+    total = payload.quantity * product["price"]
+
     title = "📦 Novo pedido!"
     body = f"{consumer_name} pediu {product['name']} (x{payload.quantity}) — {payload.pickup_location}"
+
+    wpp = (
+        f"🌱 *Terra Viva — Novo pedido!* 🎉\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 *Cliente:* {consumer_name}\n"
+        f"📦 *Produto:* {product['name']}\n"
+        f"🔢 *Quantidade:* {payload.quantity}x\n"
+        f"💰 *Total:* R$ {total:.2f}\n"
+        f"📍 *Retirada:* {pickup}\n"
+        f"💳 *Pagamento:* {payment}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👆 Acesse seus pedidos:\n"
+        f"{app_url}/minha-banca"
+    )
+
     _notify(
         db,
         user_id=product["user_id"],
@@ -131,6 +176,7 @@ def create_reservation(payload: ReservationCreate, user: dict = Depends(get_curr
         reservation_id=result.inserted_id,
         push_token=producer_user.get("expo_push_token") if producer_user else None,
         phone=producer_user.get("phone") if producer_user else None,
+        whatsapp_msg=wpp,
     )
 
     return _to_response(created)
@@ -173,8 +219,18 @@ def update_reservation_status(
     product_name = reservation.get("product_name", "produto")
     consumer_push = consumer.get("expo_push_token") if consumer else None
     consumer_phone = consumer.get("phone") if consumer else None
+    app_url = get_settings().app_url
 
     if payload.status == "confirmed":
+        wpp = (
+            f"🌱 *Terra Viva — Pedido confirmado!* 🎉\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"✅ *{producer_name}* confirmou seu pedido!\n"
+            f"📦 *Produto:* {product_name}\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"👆 Acompanhe seu pedido:\n"
+            f"{app_url}/pedidos"
+        )
         _notify(
             db,
             user_id=reservation["consumer_id"],
@@ -184,8 +240,17 @@ def update_reservation_status(
             reservation_id=reservation["_id"],
             push_token=consumer_push,
             phone=consumer_phone,
+            whatsapp_msg=wpp,
         )
     elif payload.status == "collected":
+        wpp = (
+            f"🌱 *Terra Viva — Pedido coletado!* ✅\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"🤝 Seu pedido de *{product_name}* foi marcado como coletado por *{producer_name}*.\n"
+            f"Obrigado por comprar da feira! 🥬\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"{app_url}/pedidos"
+        )
         _notify(
             db,
             user_id=reservation["consumer_id"],
@@ -195,8 +260,17 @@ def update_reservation_status(
             reservation_id=reservation["_id"],
             push_token=consumer_push,
             phone=consumer_phone,
+            whatsapp_msg=wpp,
         )
     elif payload.status == "cancelled":
+        wpp = (
+            f"🌱 *Terra Viva — Pedido cancelado* ❌\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"😔 *{producer_name}* cancelou seu pedido de *{product_name}*.\n"
+            f"Entre em contato com o produtor para mais informações.\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"{app_url}/pedidos"
+        )
         _notify(
             db,
             user_id=reservation["consumer_id"],
@@ -206,6 +280,7 @@ def update_reservation_status(
             reservation_id=reservation["_id"],
             push_token=consumer_push,
             phone=consumer_phone,
+            whatsapp_msg=wpp,
         )
 
     return _to_response(updated)
@@ -234,6 +309,15 @@ def cancel_reservation(
     producer = db.users.find_one({"_id": reservation["producer_id"]})
     consumer_name = user.get("name") or "Cliente"
     product_name = reservation.get("product_name", "produto")
+    app_url = get_settings().app_url
+    wpp = (
+        f"🌱 *Terra Viva — Pedido cancelado* ❌\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"😔 *{consumer_name}* cancelou o pedido de *{product_name}*.\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👆 Veja seus pedidos:\n"
+        f"{app_url}/minha-banca"
+    )
     _notify(
         db,
         user_id=reservation["producer_id"],
@@ -243,6 +327,7 @@ def cancel_reservation(
         reservation_id=reservation["_id"],
         push_token=producer.get("expo_push_token") if producer else None,
         phone=producer.get("phone") if producer else None,
+        whatsapp_msg=wpp,
     )
 
     return _to_response(updated)
