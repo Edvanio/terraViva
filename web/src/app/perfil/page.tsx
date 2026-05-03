@@ -254,7 +254,6 @@ function PerfilContent() {
       city: form.city ?? "",
       bio: form.bio ?? "",
       payment_methods: form.payment_methods,
-      phone: form.phone ?? "",
       ...(form.photo_url ? { photo_url: form.photo_url } : {}),
       ...(form.cover_url ? { cover_url: form.cover_url } : {}),
       ...(form.address ? { address: form.address } : {}),
@@ -270,6 +269,7 @@ function PerfilContent() {
         body: JSON.stringify(payload),
       });
 
+      if (res.status === 401) { clearSession(); return; }
       if (!res.ok) throw new Error();
       setIsNew(false);
       const redirect = searchParams.get("redirect");

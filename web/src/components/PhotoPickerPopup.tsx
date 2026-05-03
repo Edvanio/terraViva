@@ -22,7 +22,7 @@ export default function PhotoPickerPopup({ onFileSelected, disabled, children }:
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative">
       <div onClick={() => !disabled && setOpen(true)}>{children}</div>
 
       {open && (
