@@ -14,7 +14,7 @@ export async function setAuthToken(token: string): Promise<void> {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 dias — igual ao JWT do backend
+    maxAge: 60 * 60 * 24 * 360, // 360 dias
   });
 }
 
