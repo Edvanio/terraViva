@@ -384,20 +384,20 @@ export default function MinhaBancaPage() {
                   {order.consumer_phone && (
                     <a
                       href={(() => {
-                        const pickup = { feira: "\ud83d\uded6 Na feira", produtor: "\ud83c\udf3e Buscar no produtor", entrega: "\ud83d\ude9c Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
-                        const payment = { cash: "\ud83d\udcb5 Dinheiro", pix: "\ud83d\udcf2 Pix", card: "\ud83d\udcb3 Cart\u00e3o" }[order.payment_intent] ?? order.payment_intent;
+                        const pickup = { feira: "\u{1F3EA} Na feira", produtor: "\u{1F3E1} Buscar no produtor", entrega: "\u{1F697} Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
+                        const payment = { cash: "\u{1F4B5} Dinheiro", pix: "\u{1F4F2} Pix", card: "\u{1F4B3} Cart\u00e3o" }[order.payment_intent] ?? order.payment_intent;
                         const msg = [
-                          `Ol\u00e1${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! 👋`,
+                          `Ol\u00e1${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! \u{1F44B}`,
                           ``,
                           `Sou *${producerCity || "produtor"}* do *Terra Viva*. Recebi seu pedido:`,
                           ``,
-                          `🛒 *${order.product_name}*`,
-                          `📦 Quantidade: ${order.quantity}x`,
-                          `💰 Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
-                          `📍 Retirada: ${pickup}`,
+                          `\u{1F6D2} *${order.product_name}*`,
+                          `\u{1F4E6} Quantidade: ${order.quantity}x`,
+                          `\u{1F4B0} Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
+                          `\u{1F4CD} Retirada: ${pickup}`,
                           `${payment}`,
                           ``,
-                          `Vamos combinar os detalhes? 🌿`,
+                          `Vamos combinar os detalhes? \u{1F33F}`,
                         ].join("\n");
                         return `https://wa.me/55${order.consumer_phone!.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
                       })()}

@@ -1,5 +1,6 @@
 ﻿import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
+import { LogoutButton } from "@/components/LogoutButton";
 
 export async function Header() {
   const token = await getAuthToken();
@@ -47,9 +48,12 @@ export async function Header() {
             </Link>
           )}
           {token ? (
-            <Link href="/perfil" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
-              Perfil
-            </Link>
+            <>
+              <Link href="/perfil" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
+                Perfil
+              </Link>
+              <LogoutButton />
+            </>
           ) : (
             <Link href="/login" className="rounded-lg px-3 py-2 font-medium text-primary transition hover:bg-primary-subtle">
               Entrar
