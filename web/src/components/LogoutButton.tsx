@@ -1,15 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 export function LogoutButton() {
-  const router = useRouter();
-
   async function handleLogout() {
     localStorage.removeItem("terra_viva_token");
     await fetch("/api/auth/session", { method: "DELETE" });
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   return (

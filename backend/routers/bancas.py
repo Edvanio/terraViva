@@ -53,8 +53,6 @@ def get_banca(banca_id: str):
         raise HTTPException(status_code=404, detail="Banca nao encontrada")
 
     products = list(db.products.find({"user_id": user["_id"], "is_active": True}))
-    if not products:
-        raise HTTPException(status_code=404, detail="Banca nao encontrada")
 
     return {
         "id": str(user["_id"]),

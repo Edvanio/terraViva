@@ -20,9 +20,11 @@ const TABS_GUEST = [
 
 export function BottomTabBar() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setIsLoggedIn(!!localStorage.getItem("terra_viva_token"));
   }, [pathname]);
 
@@ -37,7 +39,8 @@ export function BottomTabBar() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const tabs = isLoggedIn ? TABS_LOGGED : TABS_GUEST;
+  // Evita hydration mismatch: sempre renderiza GUEST no server
+  const tabs = mounted && isLoggedIn ? TABS_LOGGED : TABS_GUEST;
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";

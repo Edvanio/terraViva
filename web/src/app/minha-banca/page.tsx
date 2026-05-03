@@ -551,6 +551,9 @@ export default function MinhaBancaPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-base font-bold text-textPrimary">{product.name}</p>
+                      {product.description && (
+                        <p className="truncate text-sm text-textSecondary">{product.description}</p>
+                      )}
                       <p className="text-lg font-bold text-primary">
                         R$ {product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>

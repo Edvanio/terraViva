@@ -12,9 +12,9 @@ export async function setAuthToken(token: string): Promise<void> {
   cookieStore.set(AUTH_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 30,
+    maxAge: 60 * 60 * 24 * 360, // 360 dias
   });
 }
 

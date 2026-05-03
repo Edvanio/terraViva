@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     mongodb_db_name: str = "terra_viva"
     secret_key: str
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 10080  # 7 dias
+    access_token_expire_minutes: int = 518400  # 360 dias
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
-    dev_otp_default: str = "123456"
+    dev_otp_default: str = ""
 
     # DigitalOcean Spaces (S3-compatible)
     do_spaces_key: str = ""
