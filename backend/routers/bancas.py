@@ -67,6 +67,7 @@ def get_banca(banca_id: str):
         "gallery": user.get("gallery", []),
         "address": user.get("address"),
         "pix_key": user.get("pix_key"),
+        "fair_location": user.get("fair_location"),
         "products": [
             {
                 "id": str(p["_id"]),
@@ -76,6 +77,7 @@ def get_banca(banca_id: str):
                 "description": p.get("description"),
                 "photo_url": p.get("photo_url"),
                 "category": p.get("category"),
+                "unit": p.get("unit"),
                 "is_active": p.get("is_active", True),
             }
             for p in products

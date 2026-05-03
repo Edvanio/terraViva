@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Banca } from "@/lib/types";
 import { BancaCard } from "@/components/BancaCard";
-import { CategoryChip, CATEGORIES } from "@/components/CategoryChip";
+import { CategoryChip, FILTER_GROUPS } from "@/components/CategoryChip";
 
 interface Props {
   bancas: Banca[];
@@ -13,7 +13,11 @@ export function BancaFilter({ bancas }: Props) {
   const [active, setActive] = useState<string | null>(null);
 
   const filtered = active
-    ? bancas.filter((b) => b.categories?.includes(active))
+    ? bancas.filter((b) => {
+        const group = FILTER_GROUPS.find((g) => g.value === active);
+        if (!group) return false;
+        return b.categories?.some((c) => group.includes.includes(c));
+      })
     : bancas;
 
   return (
@@ -26,7 +30,7 @@ export function BancaFilter({ bancas }: Props) {
           active={active === null}
           onClick={() => setActive(null)}
         />
-        {CATEGORIES.map((cat) => (
+        {FILTER_GROUPS.map((cat) => (
           <CategoryChip
             key={cat.value}
             label={cat.label}
@@ -39,7 +43,7 @@ export function BancaFilter({ bancas }: Props) {
 
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-bold text-textPrimary">
-          {active ? CATEGORIES.find((c) => c.value === active)?.label : "Todos os Produtores"}
+          {active ? FILTER_GROUPS.find((c) => c.value === active)?.label : "Todos os Produtores"}
         </h2>
         <span className="text-sm text-textSecondary">
           {filtered.length} produtor{filtered.length !== 1 ? "es" : ""}

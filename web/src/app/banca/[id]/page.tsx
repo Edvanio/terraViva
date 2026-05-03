@@ -35,6 +35,13 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
           )}
           {/* Overlay verde suave */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+          {/* Share button - canto superior direito */}
+          {banca.short_code && (
+            <div className="absolute top-3 right-3 z-10">
+              <ShareButton name={displayName} shortCode={banca.short_code} className="bg-white/90 border-white/50 shadow-md backdrop-blur-sm" />
+            </div>
+          )}
           <div className="absolute bottom-0 left-6 translate-y-1/2">
             {banca.photo_url ? (
               <Image
@@ -65,9 +72,6 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
                 <span className="text-amber text-base">&#9733;</span>
                 <span className="font-bold text-textPrimary text-sm">4.9</span>
               </div>
-              {banca.short_code && (
-                <ShareButton name={displayName} shortCode={banca.short_code} />
-              )}
             </div>
           </div>
 
@@ -129,7 +133,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
       ) : (
         <section className="grid gap-5 sm:grid-cols-2">
           {(banca.products || []).map((product) => (
-            <ProductCard key={product.id} product={product} bancaId={banca.id} />
+            <ProductCard key={product.id} product={product} bancaId={banca.id} hasFair={Boolean(banca.fair_location)} />
           ))}
         </section>
       )}

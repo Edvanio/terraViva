@@ -19,6 +19,7 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
     product_photo_url = None
     product_description = None
     product_category = None
+    product_unit = None
     consumer_name = None
     consumer_phone = None
     producer_name = None
@@ -31,6 +32,7 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
         product_photo_url = product.get("photo_url")
         product_description = product.get("description")
         product_category = product.get("category")
+        product_unit = product.get("unit")
 
     # Dados do consumidor
     consumer = db.users.find_one({"_id": document["consumer_id"]})
@@ -54,6 +56,7 @@ def _to_response(document: dict, db=None) -> ReservationResponse:
         product_photo_url=product_photo_url,
         product_description=product_description,
         product_category=product_category,
+        product_unit=product_unit,
         consumer_name=consumer_name,
         consumer_phone=consumer_phone,
         producer_name=producer_name,

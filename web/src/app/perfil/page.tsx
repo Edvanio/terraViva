@@ -29,6 +29,7 @@ interface ProfileData {
   bio: string;
   address: string;
   pix_key: string;
+  fair_location: string;
   payment_methods: string[];
   phone: string;
   photo_url: string | null;
@@ -41,6 +42,7 @@ const EMPTY: ProfileData = {
   bio: "",
   address: "",
   pix_key: "",
+  fair_location: "",
   payment_methods: ["cash", "pix"],
   phone: "",
   photo_url: null,
@@ -105,6 +107,7 @@ function PerfilContent() {
           bio: data.bio ?? "",
           address: data.address ?? "",
           pix_key: data.pix_key ?? "",
+          fair_location: data.fair_location ?? "",
           payment_methods: data.payment_methods ?? ["cash"],
           phone: formatPhone(data.phone || tokenPhone),
           photo_url: data.photo_url ?? null,
@@ -241,7 +244,7 @@ function PerfilContent() {
       saveProfile();
     }, 1500);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
-  }, [form.name, form.bio, form.address, form.city, paymentMethodsKey, loaded]);
+  }, [form.name, form.bio, form.address, form.city, form.fair_location, paymentMethodsKey, loaded]);
 
   async function saveProfile() {
     const token = getToken();
@@ -257,6 +260,7 @@ function PerfilContent() {
       ...(form.photo_url ? { photo_url: form.photo_url } : {}),
       ...(form.cover_url ? { cover_url: form.cover_url } : {}),
       ...(form.address ? { address: form.address } : {}),
+      ...(form.fair_location ? { fair_location: form.fair_location } : { fair_location: "" }),
     };
 
     try {
@@ -451,6 +455,18 @@ function PerfilContent() {
             </div>
           </div>
         )}
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-textPrimary">
+            Local da feira <span className="font-normal text-textSecondary">(opcional)</span>
+          </label>
+          <Input
+            value={form.fair_location}
+            onChange={(e) => setForm({ ...form, fair_location: e.target.value })}
+            placeholder="Ex: Praça Central, sábados 7h–12h"
+          />
+          <p className="mt-1 text-xs text-textSecondary">Se preenchido, clientes poderão escolher &quot;retirar na feira&quot; ao reservar.</p>
+        </div>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">

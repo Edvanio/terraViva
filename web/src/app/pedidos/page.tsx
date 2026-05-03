@@ -114,7 +114,7 @@ export default function PedidosPage() {
 
               {/* Preço destaque */}
               <p className="mt-2 text-xl font-bold text-primary">
-                R$ {order.total_price.toFixed(2)}
+                R$ {order.total_price.toFixed(2)}{order.product_unit && <span className="text-sm font-semibold text-textSecondary">/{order.product_unit}</span>}
                 <span className="ml-1.5 text-sm font-normal text-textSecondary">{order.quantity}x</span>
               </p>
 
@@ -150,7 +150,9 @@ export default function PedidosPage() {
                     const msg = [
                       `Olá! 👋`,
                       ``,
-                      `Sou cliente do *Terra Viva* e fiz um pedido pelo app:`,
+                      order.consumer_name
+                        ? `Sou *${order.consumer_name}*, cliente do *Terra Viva*, e fiz um pedido pelo app:`
+                        : `Sou cliente do *Terra Viva* e fiz um pedido pelo app:`,
                       ``,
                       `🛒 *${order.product_name}*`,
                       `📦 Quantidade: ${order.quantity}x`,

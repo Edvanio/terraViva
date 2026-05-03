@@ -16,17 +16,20 @@ from PIL import Image, ImageChops, ImageEnhance, ImageStat
 from config import get_settings
 
 CATEGORIES = {
-    "hortifruti",
+    "frutas",
+    "verduras",
+    "legumes",
+    "ovos",
+    "carnes",
     "queijos",
+    "frios",
     "paes",
     "doces",
-    "embutidos",
+    "bebidas",
+    "temperos",
     "conservas",
     "colonial",
-    "bebidas",
-    "ovos",
     "artesanal",
-    "temperos",
     "outros",
 }
 
@@ -177,7 +180,7 @@ async def analyze_with_vision(photo_url: str, city: str | None) -> dict[str, Any
         "unit (string), color_primary (hex), color_accent (hex), "
         "suggested_price (number ou null), suggested_price_note (string ou null). "
         "A categoria deve ser exatamente uma destas: "
-        "hortifruti, queijos, paes, doces, embutidos, conservas, colonial, bebidas, ovos, artesanal, temperos, outros. "
+        "frutas, verduras, legumes, ovos, carnes, queijos, frios, paes, doces, bebidas, temperos, conservas, colonial, artesanal, outros. "
         "A unidade (unit) deve ser exatamente uma destas: "
         "kg, g, litro, ml, unidade, duzia, pe, bandeja, pote, fatia, pacote, saco, maco. "
         "As cores devem ser naturais e legiveis. "

@@ -86,8 +86,9 @@ export default function MinhaBancaPage() {
   const { toast } = useToast();
   const stockDebounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  // Formulário novo produto
+  // Formulário novo produto / edição
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -211,28 +212,44 @@ export default function MinhaBancaPage() {
     await loadData();
   }
 
+  function startEdit(product: any) {
+    setEditingId(product.id);
+    setNewName(product.name);
+    setNewPrice(product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
+    setNewDesc(product.description ?? "");
+    setNewCategory(product.category ?? "");
+    setNewUnit(product.unit ?? "unidade");
+    setNewPhoto(product.photo_url ?? "");
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function addProduct(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     const token = getToken();
-    const res = await fetch(`${base}/products`, {
-      method: "POST",
+    const payload = {
+      name: newName,
+      price: parsePrice(newPrice),
+      description: newDesc || undefined,
+      category: newCategory || undefined,
+      unit: newUnit || "unidade",
+      photo_url: newPhoto || undefined,
+      is_active: true,
+    };
+    const url = editingId ? `${base}/products/${editingId}` : `${base}/products`;
+    const method = editingId ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        name: newName,
-        price: parsePrice(newPrice),
-        description: newDesc || undefined,
-        category: newCategory || undefined,
-        unit: newUnit || "unidade",
-        photo_url: newPhoto || undefined,
-        is_active: true,
-      }),
+      body: JSON.stringify(payload),
     });
     setSaving(false);
     if (res.ok) {
       setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade");
+      setEditingId(null);
       setShowForm(false);
-      toast("Produto adicionado! ✅");
+      toast(editingId ? "Produto atualizado! ✅" : "Produto adicionado! ✅");
       await loadData();
     } else {
       toast("Não conseguimos salvar. Tente de novo.", "error");
@@ -456,7 +473,7 @@ export default function MinhaBancaPage() {
             </button>
           ) : (
             <div className="flex justify-end">
-              <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setNewPhoto(""); }}>
+              <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setEditingId(null); setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade"); }}>
                 ✕ Cancelar
               </Button>
             </div>
@@ -464,7 +481,7 @@ export default function MinhaBancaPage() {
 
           {showForm && (
             <form onSubmit={addProduct} className="space-y-3 rounded-xl bg-surface p-4 shadow-card animate-fade-in">
-              <h3 className="font-semibold text-textPrimary">Novo produto</h3>
+              <h3 className="font-semibold text-textPrimary">{editingId ? "Editar produto" : "Novo produto"}</h3>
               <Input
                 placeholder="Nome do produto (ex: Queijo Colonial)"
                 value={newName}
@@ -568,7 +585,7 @@ export default function MinhaBancaPage() {
               </div>
 
               <Button type="submit" size="sm" className="w-full" disabled={saving || uploadingPhoto}>
-                {uploadingPhoto ? "Enviando foto..." : saving ? "Salvando..." : "Salvar produto"}
+                {uploadingPhoto ? "Enviando foto..." : saving ? "Salvando..." : editingId ? "Atualizar produto" : "Salvar produto"}
               </Button>
             </form>
           )}
@@ -581,7 +598,7 @@ export default function MinhaBancaPage() {
           ) : (
             <div className="space-y-3">
               {products.map((product) => (
-                <article key={product.id} className="rounded-2xl bg-surface p-4 shadow-card">
+                <article key={product.id} onClick={() => startEdit(product)} className="cursor-pointer rounded-2xl bg-surface p-4 shadow-card transition hover:ring-2 hover:ring-primary/30">
                   {/* Linha 1: Foto + Info */}
                   <div className="flex gap-3">
                     <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary-subtle text-3xl">
@@ -608,7 +625,7 @@ export default function MinhaBancaPage() {
                   </div>
 
                   {/* Linha 2: Estoque */}
-                  <div className="mt-3 flex items-center justify-between rounded-xl bg-background px-3 py-2">
+                  <div onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center justify-between rounded-xl bg-background px-3 py-2">
                     <span className="text-sm font-medium text-textSecondary">🧺 Unidades no cesto</span>
                     <div className="flex items-center gap-2">
                       <button
@@ -630,7 +647,7 @@ export default function MinhaBancaPage() {
                   </div>
 
                   {/* Linha 3: Disponível / Esgotado (segmented) + lixeira */}
-                  <div className="mt-3 flex items-center gap-2">
+                  <div onClick={(e) => e.stopPropagation()} className="mt-3 flex items-center gap-2">
                     <div className="flex flex-1 gap-1 rounded-xl bg-background p-1">
                       <button
                         onClick={() => !product.is_active && toggleProduct(product.id, false)}

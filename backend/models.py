@@ -39,6 +39,7 @@ class UserProfileUpdate(BaseModel):
     gallery: Optional[list[str]] = None
     pix_key: Optional[str] = None
     address: Optional[str] = None
+    fair_location: Optional[str] = None
     expo_push_token: Optional[str] = None
 
 
@@ -55,6 +56,7 @@ class UserProfileResponse(BaseModel):
     gallery: list[str] = []
     pix_key: Optional[str] = None
     address: Optional[str] = None
+    fair_location: Optional[str] = None
 
 
 class BancaResponse(BaseModel):
@@ -150,6 +152,7 @@ class ReservationResponse(BaseModel):
     product_photo_url: Optional[str] = None
     product_description: Optional[str] = None
     product_category: Optional[str] = None
+    product_unit: Optional[str] = None
     consumer_name: Optional[str] = None
     consumer_phone: Optional[str] = None
     producer_name: Optional[str] = None
