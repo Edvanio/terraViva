@@ -32,7 +32,7 @@ export default function ReservarPage() {
 
   const [quantity, setQuantity] = useState(1);
   const [pickupLocation, setPickupLocation] = useState<"feira" | "produtor" | "entrega">("produtor");
-  const [paymentIntent, setPaymentIntent] = useState<"cash" | "pix" | "card">("cash");
+  const [paymentIntent, setPaymentIntent] = useState<"cash" | "pix" | "card">("pix");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
