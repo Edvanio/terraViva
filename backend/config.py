@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     openai_vision_model: str = "gpt-4o"
     openai_image_model: str = "dall-e-2"
 
+    # Z-API (WhatsApp)
+    zapi_instance_id: str = ""
+    zapi_token: str = ""
+    zapi_client_token: str = ""
+
+    # URL pública da aplicação (para links nas mensagens WhatsApp)
+    app_url: str = "https://terra-viva-3n3ko.ondigitalocean.app"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
