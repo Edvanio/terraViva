@@ -29,6 +29,7 @@ interface Order {
   status: "pending" | "confirmed" | "collected" | "cancelled";
   pickup_location: string;
   payment_intent: string;
+  updated_at: string;
 }
 
 interface Product {
@@ -47,6 +48,13 @@ interface Product {
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("terra_viva_token");
+}
+
+const ARCHIVE_HOURS = 24;
+function isArchived(order: Order): boolean {
+  if (order.status !== "collected" && order.status !== "cancelled") return false;
+  const updated = new Date(order.updated_at).getTime();
+  return Date.now() - updated > ARCHIVE_HOURS * 60 * 60 * 1000;
 }
 
 const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
@@ -298,14 +306,14 @@ export default function MinhaBancaPage() {
       {/* ── PEDIDOS ── */}
       {tab === "orders" && (
         <div className="space-y-3">
-          {orders.length === 0 ? (
+          {orders.filter((o) => !isArchived(o)).length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16 text-center">
               <span className="text-5xl">📭</span>
               <p className="text-textSecondary">Nenhum pedido recebido ainda.</p>
               <p className="text-sm text-textSecondary">Quando alguém pedir, aparece aqui. 🌿</p>
             </div>
           ) : (
-            orders.map((order) => {
+            orders.filter((o) => !isArchived(o)).map((order) => {
               const displayName = order.consumer_name || "Cliente";
               return (
               <article key={order.id} className="overflow-hidden rounded-2xl bg-white shadow-card animate-fade-in">
@@ -383,20 +391,20 @@ export default function MinhaBancaPage() {
                   {order.consumer_phone && (
                     <a
                       href={(() => {
-                        const pickup = { feira: "\u{1F3EA} Na feira", produtor: "\u{1F3E1} Buscar no produtor", entrega: "\u{1F697} Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
-                        const payment = { cash: "\u{1F4B5} Dinheiro", pix: "\u{1F4F2} Pix", card: "\u{1F4B3} Cart\u00e3o" }[order.payment_intent] ?? order.payment_intent;
+                        const pickup = { feira: "🏪 Na feira", produtor: "🏡 Buscar no produtor", entrega: "🚗 Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
+                        const payment = { cash: "💵 Dinheiro", pix: "📲 Pix", card: "💳 Cartão" }[order.payment_intent] ?? order.payment_intent;
                         const msg = [
-                          `Ol\u00e1${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! \u{1F44B}`,
+                          `Olá${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! 👋`,
                           ``,
-                          `Sou *${producerCity || "produtor"}* do *Terra Viva*. Recebi seu pedido:`,
+                          `Sou *${producerName || "produtor"}* do *Terra Viva*. Recebi seu pedido:`,
                           ``,
-                          `\u{1F6D2} *${order.product_name}*`,
-                          `\u{1F4E6} Quantidade: ${order.quantity}x`,
-                          `\u{1F4B0} Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
-                          `\u{1F4CD} Retirada: ${pickup}`,
+                          `🛒 *${order.product_name}*`,
+                          `📦 Quantidade: ${order.quantity}x`,
+                          `💰 Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
+                          `📍 Retirada: ${pickup}`,
                           `${payment}`,
                           ``,
-                          `Vamos combinar os detalhes? \u{1F33F}`,
+                          `Vamos combinar os detalhes? 🌿`,
                         ].join("\n");
                         return `https://wa.me/55${order.consumer_phone!.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
                       })()}
@@ -411,6 +419,15 @@ export default function MinhaBancaPage() {
               </article>
               );
             })
+          )}
+
+          {orders.some((o) => isArchived(o)) && (
+            <Link
+              href="/minha-banca/arquivados"
+              className="flex items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-textSecondary hover:bg-background transition-colors"
+            >
+              🌾 Arquivados
+            </Link>
           )}
         </div>
       )}

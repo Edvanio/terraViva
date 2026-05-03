@@ -29,6 +29,30 @@ export function BancaCard({ banca }: { banca: Banca }) {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+
+        {/* Share icon */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = `${window.location.origin}/banca/${banca.id}`;
+            if (navigator.share) {
+              navigator.share({ title: displayName, url });
+            } else {
+              navigator.clipboard.writeText(url);
+            }
+          }}
+          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm hover:bg-white transition-colors"
+          aria-label="Compartilhar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-textPrimary">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" strokeWidth="1.5" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </button>
       </div>
 
       {/* Avatar */}
