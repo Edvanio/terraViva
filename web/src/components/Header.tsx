@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export async function Header() {
   const token = await getAuthToken();
@@ -49,6 +50,7 @@ export async function Header() {
           )}
           {token ? (
             <>
+              <NotificationBell />
               <Link href="/perfil" className="rounded-lg px-3 py-2 font-medium text-textSecondary transition hover:bg-primary-subtle hover:text-primary">
                 Perfil
               </Link>
