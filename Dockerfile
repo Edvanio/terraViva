@@ -22,6 +22,12 @@ COPY web/ .
 ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
+# API_INTERNAL_URL: URL do backend acessada pelo Next.js server-side.
+# No container único (produção DO), backend roda em 127.0.0.1:8000.
+# Em dev com Docker Compose, o env_file sobrescreve para http://backend:8000.
+ARG API_INTERNAL_URL=http://127.0.0.1:8000
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
+
 RUN npm run build
 
 # =============================================================================

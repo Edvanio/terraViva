@@ -52,7 +52,7 @@ export function BottomTabBar() {
               <span className={`text-xl ${active ? "drop-shadow-sm" : ""}`}>
                 {active ? tab.activeIcon : tab.icon}
               </span>
-              <span className={`text-[10px] font-semibold leading-tight ${active ? "font-bold" : ""}`}>
+              <span className={`text-xs font-semibold leading-tight ${active ? "font-bold" : ""}`}>
                 {tab.label}
               </span>
               {active && (

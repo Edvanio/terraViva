@@ -93,7 +93,7 @@ export default function PedidosPage() {
               </div>
 
               {order.product_description && (
-                <p className="mt-0.5 line-clamp-1 text-xs text-textSecondary">{order.product_description}</p>
+                <p className="mt-0.5 line-clamp-1 text-sm text-textSecondary">{order.product_description}</p>
               )}
 
               {/* Preço destaque */}
@@ -118,7 +118,7 @@ export default function PedidosPage() {
                     {(order.producer_name || "P")[0].toUpperCase()}
                   </div>
                 )}
-                <span className="text-xs text-textSecondary">{order.producer_name || "Produtor"}</span>
+                <span className="text-sm text-textSecondary">{order.producer_name || "Produtor"}</span>
               </div>
             </div>
           </div>

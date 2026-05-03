@@ -72,7 +72,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
           {/* Pagamentos */}
           {banca.payment_methods?.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="text-xs font-semibold text-textSecondary">Aceita:</span>
+              <span className="text-sm font-semibold text-textSecondary">Aceita:</span>
               {banca.payment_methods.map((method: string) => (
                 <span
                   key={method}
@@ -113,7 +113,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
         <h2 className="flex items-center gap-2 font-display text-xl font-bold text-textPrimary">
           <span>🌿</span> Produtos disponíveis
         </h2>
-        <span className="rounded-full bg-primary-subtle px-3 py-1 text-xs font-bold text-primary">
+        <span className="rounded-full bg-primary-subtle px-3 py-1 text-sm font-bold text-primary">
           {(banca.products || []).length} iten{(banca.products || []).length !== 1 ? "s" : ""}
         </span>
       </div>

@@ -52,7 +52,7 @@ export function HomeActions() {
           <span className="relative text-4xl">🧺</span>
           <div className="relative">
             <p className="text-base font-bold leading-tight">Quero comprar</p>
-            <p className="mt-1 text-xs text-white/80 leading-tight">Veja o que tem de bom</p>
+            <p className="mt-1 text-sm text-white/80 leading-tight">Veja o que tem de bom</p>
           </div>
         </Link>
 
@@ -64,7 +64,7 @@ export function HomeActions() {
           <span className="relative text-4xl">🌽</span>
           <div className="relative">
             <p className="text-base font-bold leading-tight text-earth">Quero vender</p>
-            <p className="mt-1 text-xs text-textSecondary leading-tight">Gerencie seus produtos</p>
+            <p className="mt-1 text-sm text-textSecondary leading-tight">Gerencie seus produtos</p>
           </div>
         </Link>
       </div>
@@ -73,7 +73,7 @@ export function HomeActions() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-bold text-textPrimary">Meus pedidos</h2>
-          <Link href="/pedidos" className="text-xs font-bold text-primary hover:underline">
+          <Link href="/pedidos" className="text-sm font-bold text-primary hover:underline">
             Ver todos →
           </Link>
         </div>
@@ -93,7 +93,7 @@ export function HomeActions() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-textPrimary truncate">{order.product_name}</p>
-                  <p className="text-xs text-textSecondary truncate">
+                  <p className="text-sm text-textSecondary truncate">
                     {order.quantity}x · R$ {order.total_price.toFixed(2)}{order.producer_name ? ` · ${order.producer_name}` : ""}
                   </p>
                 </div>
@@ -130,7 +130,7 @@ export function HomeActions() {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-textPrimary truncate">{req.product_name}</p>
-                  <p className="text-xs text-textSecondary truncate">
+                  <p className="text-sm text-textSecondary truncate">
                     {req.quantity}x{req.consumer_name ? ` · ${req.consumer_name}` : ""}
                   </p>
                 </div>

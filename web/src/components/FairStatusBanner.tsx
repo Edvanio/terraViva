@@ -23,7 +23,7 @@ export function FairStatusBanner({ fairConfig }: { fairConfig?: FairConfig | nul
             <span className="flex h-2 w-2 animate-pulse rounded-full bg-green-300" />
             <span className="text-sm font-semibold">Aceitando pedidos</span>
           </div>
-          <p className="mt-1 text-xs text-white/65">
+          <p className="mt-1 text-sm text-white/65">
             Pedidos até {fairConfig.order_window_close}
           </p>
         </div>
@@ -31,10 +31,10 @@ export function FairStatusBanner({ fairConfig }: { fairConfig?: FairConfig | nul
         {/* Data / horário / local */}
         <div className="text-right">
           <p className="text-sm font-bold capitalize">{fairConfig.fair_day}</p>
-          <p className="text-xs text-white/70">
+          <p className="text-sm text-white/70">
             {fairConfig.fair_start_time}–{fairConfig.fair_end_time}
           </p>
-          <p className="mt-0.5 text-xs text-white/60">📍 {fairConfig.fair_location}</p>
+          <p className="mt-0.5 text-sm text-white/60">📍 {fairConfig.fair_location}</p>
         </div>
       </div>
     </div>

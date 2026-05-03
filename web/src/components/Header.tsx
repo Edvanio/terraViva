@@ -30,7 +30,7 @@ export async function Header() {
           </div>
           <div className="leading-tight">
             <span className="block font-display text-lg font-bold tracking-tight text-primary">Terra Viva</span>
-            <span className="block text-[11px] font-medium text-textSecondary">Do produtor pra você</span>
+            <span className="block text-xs font-medium text-textSecondary">Do produtor pra você</span>
           </div>
         </Link>
 
