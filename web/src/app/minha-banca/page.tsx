@@ -409,7 +409,7 @@ export default function MinhaBancaPage() {
                           `📦 Quantidade: ${order.quantity}x`,
                           `💰 Total: *R$ ${order.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}*`,
                           `📍 Retirada: ${pickup}`,
-                          `${payment}`,
+                          `💳 Pagamento: ${payment}`,
                           ``,
                           `Vamos combinar os detalhes? 🌿`,
                         ].join("\n");

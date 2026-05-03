@@ -156,7 +156,7 @@ export default function PedidosPage() {
                       `📦 Quantidade: ${order.quantity}x`,
                       `💰 Total: *R$ ${order.total_price.toFixed(2).replace(".", ",")}*`,
                       `📍 Retirada: ${pickup}`,
-                      `${payment}`,
+                      `💳 Pagamento: ${payment}`,
                       ``,
                       `Gostaria de confirmar os detalhes. Obrigado! 🌿`,
                     ].join("\n");
