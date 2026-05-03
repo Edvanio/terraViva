@@ -38,7 +38,7 @@ services:
       # ── CORS (adicione o domínio do app após o deploy) ───────────
       - key: CORS_ORIGINS
         scope: RUN_TIME
-        value: "http://localhost,http://localhost:3000"
+        value: "http://localhost,http://localhost:3000,https://terra-viva-3n3ko.ondigitalocean.app,https://terra-viva-vnvaf.ondigitalocean.app"
 
       # ── OTP padrão (remova em produção real) ─────────────────────
       - key: DEV_OTP_DEFAULT
@@ -70,7 +70,28 @@ services:
         scope: RUN_TIME
         value: terraviva/profiles
 
+      - key: DO_SPACES_PRODUCTS_FOLDER
+        scope: RUN_TIME
+        value: terraviva/products
+
+      # ── OpenAI ──────────────────────────────────────────────────
+      - key: OPENAI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+
+      - key: OPENAI_VISION_MODEL
+        scope: RUN_TIME
+        value: gpt-4o
+
+      - key: OPENAI_IMAGE_MODEL
+        scope: RUN_TIME
+        value: gpt-image-1
+
       # ── Next.js URL interna (mesmo container via nginx) ──────────
       - key: API_INTERNAL_URL
         scope: RUN_TIME
         value: http://127.0.0.1:8000
+
+      - key: NEXT_PUBLIC_API_URL
+        scope: BUILD_TIME
+        value: /api
