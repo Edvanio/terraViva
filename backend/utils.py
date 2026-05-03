@@ -23,7 +23,7 @@ def normalize_phone(phone: str) -> str:
 
 
 def generate_otp() -> str:
-    return f"{random.randint(0, 999999):06d}"
+    return f"{secrets.randbelow(1000000):06d}"
 
 
 def generate_short_code(db) -> str:

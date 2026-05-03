@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import type { Banca } from "@/lib/types";
 import { ProductCard } from "@/components/ProductCard";
 import { ShareButton } from "@/components/ShareButton";
@@ -8,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function BancaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const banca = await apiGet<Banca>(`/bancas/${id}`);
+  const banca = await apiGet<Banca>(`/bancas/${id}`).catch(() => null);
+  if (!banca) return notFound();
   const displayName = banca.name || banca.city || "Banca";
   const initial = displayName.charAt(0).toUpperCase();
 
