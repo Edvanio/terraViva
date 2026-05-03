@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const TABS_LOGGED = [
@@ -21,10 +22,19 @@ export function BottomTabBar() {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    setIsLoggedIn(!!localStorage.getItem("terra_viva_token"));
+    const token = localStorage.getItem("terra_viva_token");
+    setIsLoggedIn(!!token);
+    if (token) {
+      const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
+      fetch(`${base}/producer/profile`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => { if (data?.photo_url) setProfilePhoto(data.photo_url); })
+        .catch(() => {});
+    }
   }, [pathname]);
 
   // Escuta mudanças no localStorage (logout em outra aba ou clearSession)
@@ -62,7 +72,18 @@ export function BottomTabBar() {
               }`}
             >
               <span className={`text-xl ${active ? "drop-shadow-sm" : ""}`}>
-                {active ? tab.activeIcon : tab.icon}
+                {tab.href === "/perfil" && profilePhoto ? (
+                  <Image
+                    src={profilePhoto}
+                    alt="Perfil"
+                    width={24}
+                    height={24}
+                    unoptimized
+                    className="h-6 w-6 rounded-full object-cover border border-border"
+                  />
+                ) : (
+                  active ? tab.activeIcon : tab.icon
+                )}
               </span>
               <span className={`text-xs font-semibold leading-tight ${active ? "font-bold" : ""}`}>
                 {tab.label}

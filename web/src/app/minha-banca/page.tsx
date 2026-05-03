@@ -145,7 +145,11 @@ export default function MinhaBancaPage() {
       return;
     }
 
-    if (ordersRes.ok) setOrders(await ordersRes.json());
+    if (ordersRes.ok) {
+      const ordersData = await ordersRes.json();
+      setOrders(ordersData);
+      if (ordersData.length === 0) setTab("products");
+    }
     if (productsRes.ok) setProducts(await productsRes.json());
     setLoading(false);
   }
