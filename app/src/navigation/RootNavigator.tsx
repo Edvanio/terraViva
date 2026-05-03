@@ -7,7 +7,6 @@ import { Onboarding } from "@/components/Onboarding";
 import { AppTabs } from "@/navigation/ConsumerTabs";
 import { PhoneScreen } from "@/screens/auth/PhoneScreen";
 import { OtpScreen } from "@/screens/auth/OtpScreen";
-import { BancasScreen } from "@/screens/consumer/BancasScreen";
 import { BancaScreen } from "@/screens/consumer/BancaScreen";
 import { CheckoutScreen } from "@/screens/consumer/CheckoutScreen";
 import { ProductsScreen } from "@/screens/producer/ProductsScreen";
@@ -42,10 +41,9 @@ export function RootNavigator() {
       ) : (
         <>
           <Stack.Screen name="AppTabs" component={AppTabs} options={{ headerShown: false }} />
-          <Stack.Screen name="Bancas" component={BancasScreen} options={{ title: "Bancas" }} />
           <Stack.Screen name="Banca" component={BancaScreen} options={{ title: "Banca" }} />
           <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ title: "Reserva" }} />
-          <Stack.Screen name="MyProducts" component={ProductsScreen} options={{ title: "Minha Banca" }} />
+          <Stack.Screen name="MyProducts" component={ProductsScreen} options={{ title: "Meus Produtos" }} />
           <Stack.Screen name="AddProduct" component={AddProductScreen} options={{ title: "Novo Produto" }} />
           <Stack.Screen name="AIProduct" component={AIProductScreen} options={{ title: "Cadastro inteligente" }} />
         </>
