@@ -14,7 +14,7 @@
 
 ### RN-AUTH-02: Criação automática de usuário
 **Descrição**: Se o telefone não existe no banco ao verificar OTP, o usuário é criado automaticamente.  
-**Justificativa**: Eliminação de fricção no cadastro.  
+**Justificativa**: Eliminação de fricção no cadastro. O mesmo usuário pode ser produtor (vender) e consumidor (comprar de outros produtores) simultaneamente.  
 **Implementação**: `backend/routers/auth.py` → `verify_otp()`
 
 ### RN-AUTH-03: Sessão de longa duração

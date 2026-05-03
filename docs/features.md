@@ -23,7 +23,7 @@
 
 ### 2. Vitrine de Bancas (Público)
 **Descrição**: Listagem pública de produtores que possuem produtos ativos.  
-**Casos de Uso**: Consumidor navega produtores sem login.  
+**Casos de Uso**: Qualquer pessoa — consumidor final ou outro produtor — navega as bancas sem login. Como cada produtor vende produtos diferentes, é comum que produtores comprem entre si (ex: quem faz queijo compra verduras de outro).  
 **Componentes**:
 - `backend/routers/bancas.py` — GET /bancas, GET /bancas/{id}
 - `web/src/app/bancas/page.tsx` — Listagem SSR
