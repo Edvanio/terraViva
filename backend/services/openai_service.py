@@ -174,10 +174,12 @@ async def analyze_with_vision(photo_url: str, city: str | None) -> dict[str, Any
         "Analise esta foto de um produto de feira. "
         "Retorne SOMENTE JSON valido com os campos: "
         "name (string), description (string), category (string), "
-        "color_primary (hex), color_accent (hex), "
+        "unit (string), color_primary (hex), color_accent (hex), "
         "suggested_price (number ou null), suggested_price_note (string ou null). "
         "A categoria deve ser exatamente uma destas: "
         "hortifruti, queijos, paes, doces, embutidos, conservas, colonial, bebidas, ovos, artesanal, temperos, outros. "
+        "A unidade (unit) deve ser exatamente uma destas: "
+        "kg, g, litro, ml, unidade, duzia, pe, bandeja, pote, fatia, pacote, saco, maco. "
         "As cores devem ser naturais e legiveis. "
         "Sempre retorne suggested_price com um valor plausivel para feira local; "
         "se a cidade nao for informada, use referencia media de Santa Catarina. "
@@ -212,6 +214,7 @@ async def analyze_with_vision(photo_url: str, city: str | None) -> dict[str, Any
         "name": (parsed.get("name") or "").strip() or None,
         "description": (parsed.get("description") or "").strip() or None,
         "category": _normalize_category(parsed.get("category")),
+        "unit": (parsed.get("unit") or "").strip().lower() or None,
         "color_primary": _normalize_hex(parsed.get("color_primary")),
         "color_accent": _normalize_hex(parsed.get("color_accent")),
         "suggested_price": suggested_price,
@@ -309,6 +312,7 @@ async def generate_ai_product(photo_url: str, city: str | None) -> dict[str, Any
         "name": vision_result.get("name"),
         "description": vision_result.get("description"),
         "category": vision_result.get("category"),
+        "unit": vision_result.get("unit"),
         "color_primary": vision_result.get("color_primary"),
         "color_accent": vision_result.get("color_accent"),
         "suggested_price": vision_result.get("suggested_price"),

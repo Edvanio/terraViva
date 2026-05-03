@@ -58,7 +58,7 @@ export function ProductCard({ product, bancaId }: { product: Product; bancaId: s
           <div className="flex items-start justify-between gap-2">
             <h4 className="text-base font-bold leading-tight text-textPrimary">{product.name}</h4>
             <strong className="flex-shrink-0 rounded-lg bg-primary-subtle px-2 py-0.5 text-lg font-extrabold text-primary">
-              R$ {product.price.toFixed(2)}
+              R$ {product.price.toFixed(2)}{product.unit && <span className="text-xs font-semibold text-textSecondary">/{product.unit}</span>}
             </strong>
           </div>
           <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-textSecondary">
