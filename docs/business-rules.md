@@ -99,6 +99,23 @@ confirmed → cancelled (pelo produtor)
 **Descrição**: Ao criar reserva, produtor recebe push notification via Expo.  
 **Implementação**: Thread daemon fire-and-forget (não bloqueia response).
 
+### RN-RES-07: Sistema de Fiado
+**Descrição**: Produtor pode marcar um pedido como "fiado" — cliente leva o produto e paga depois.  
+**Status válidos**: `pending → confirmed → collected | cancelled | fiado`  
+**Regras**:
+- Qualquer pedido pode ser marcado como fiado pelo produtor (sem restrição de valor ou prazo)
+- Pedidos fiados aparecem na tab dedicada "Fiados" no painel do produtor
+- Do fiado, produtor pode marcar como "Pago" (collected) ou "Cancelar"
+- Decisão é 100% do produtor — sem automação de cobrança
+
+### RN-RES-08: Pagamento padrão Pix
+**Descrição**: Na tela de reserva, o método de pagamento padrão é "Pix" (não "Dinheiro").  
+**Justificativa**: Reflete o comportamento real dos consumidores da região.
+
+### RN-RES-09: Nome obrigatório antes de reservar
+**Descrição**: Consumidor deve informar seu nome antes de fazer o primeiro pedido.  
+**Implementação**: `CustomerInfoPrompt` verifica se `user.name` é null ao montar a tela de reserva.
+
 ---
 
 ## Regras da Feira
@@ -110,6 +127,27 @@ confirmed → cancelled (pelo produtor)
 ### RN-FEIRA-02: Janela de pedidos
 **Descrição**: Pedidos só podem ser feitos dentro da janela definida (`order_window_open` / `order_window_close`).  
 **Implementação**: Frontend exibe banner de status (aberta/fechada). **Nota**: Validação backend da janela ainda não implementada — apenas informativo no frontend.
+
+---
+
+## Regras de Geolocalização
+
+### RN-GEO-01: Detecção de cidade por GPS
+**Descrição**: Botão "Usar minha localização" usa `navigator.geolocation` + reverse geocode via Nominatim (OpenStreetMap).  
+**Implementação**: `web/src/app/perfil/page.tsx` → `handleUseMyLocation()`  
+**Fallback**: Se GPS indisponível ou negado, usuário digita endereço manualmente.
+
+### RN-GEO-02: Geocode por IA (endereço digitado)
+**Descrição**: Quando o usuário digita um endereço, o backend extrai cidade/estado via GPT-4o-mini.  
+**Implementação**: `POST /producer/geocode`  
+**Regras do prompt**: 
+- Nomes de rua/bairro (ex: "Rua Treze de Maio") NÃO são tratados como cidades
+- Só preenche `city` se o município estiver claramente identificado
+- Casos ambíguos retornam `null` (não chuta)
+
+### RN-GEO-03: Chip de localização sempre visível
+**Descrição**: O chip com cidade/UF aparece sempre que há informação disponível — seja do GPS, do geocode IA, ou do `form.city` salvo no banco.  
+**Prioridade**: geoHint (recém detectado) > form.city (salvo)
 
 ---
 

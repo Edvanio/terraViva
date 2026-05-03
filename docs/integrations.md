@@ -93,6 +93,14 @@
 **Propósito**: Client Components fazem requests autenticadas via browser  
 **Configuração**: `NEXT_PUBLIC_API_URL=/api` (build-time)
 
+### Nominatim / OpenStreetMap (Client-side)
+**Tipo**: HTTP fetch no browser (client-side)  
+**URL**: `https://nominatim.openstreetmap.org/reverse`  
+**Propósito**: Reverse geocode das coordenadas GPS do usuário para detectar cidade/UF  
+**Custo**: Gratuito (sem API key)  
+**Limitações**: Rate limit de 1 req/segundo; requer `User-Agent` identificador  
+**Tratamento de Falhas**: Toast de erro; fallback para digitação manual
+
 ---
 
 ## Dependências Externas Futuras (Não Implementadas)
@@ -142,6 +150,15 @@
 │ Expo Push  │
 │ API        │
 └────────────┘
+
+    Browser (client-side)
+        │
+        ▼
+┌──────────────┐
+│  Nominatim   │
+│ OpenStreetMap│
+│(reverse geo) │
+└──────────────┘
 ```
 
 ## Contratos de Integração
@@ -154,6 +171,19 @@ O prompt enviado ao GPT-4o inclui instruções para retornar JSON com:
 - `suggested_price` (float) — preço em R$ baseado na região
 - `color_primary` (hex) — cor dominante do produto
 - `color_accent` (hex) — cor de destaque
+
+### OpenAI Geocode (GPT-4o-mini)
+Prompt otimizado para extrair município de endereços brasileiros:
+- Ignora nomes de rua/bairro como possíveis cidades
+- Retorna `null` em casos ambíguos
+- Request: `POST /producer/geocode { address: "..." }`
+
+### Nominatim Reverse Geocode (Client-side)
+```
+GET https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&accept-language=pt-BR
+User-Agent: TerraViva/1.0
+```
+Resposta processada: extrai `address.city/town/village/municipality` + `ISO3166-2-lvl4` para UF.
 
 ### Expo Push Notification
 ```json
