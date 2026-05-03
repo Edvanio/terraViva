@@ -89,3 +89,27 @@ def send_push_notification(expo_push_token: str, title: str, body: str) -> None:
             )
     except Exception as exc:
         logger.warning("Push notification falhou: %s", exc)
+
+
+def send_whatsapp(phone: str, message: str) -> None:
+    """Envia mensagem WhatsApp via z-api (fire-and-forget)."""
+    settings = get_settings()
+    if not settings.zapi_instance_id or not settings.zapi_token:
+        return
+    try:
+        normalized = normalize_phone(phone)
+        url = (
+            f"https://api.z-api.io/instances/{settings.zapi_instance_id}"
+            f"/token/{settings.zapi_token}/send-text"
+        )
+        headers = {}
+        if settings.zapi_client_token:
+            headers["Client-Token"] = settings.zapi_client_token
+        with httpx.Client(timeout=8) as client:
+            resp = client.post(url, json={"phone": f"55{normalized}", "message": message}, headers=headers)
+            if not resp.is_success:
+                logger.warning("WhatsApp z-api falhou: %s %s", resp.status_code, resp.text)
+    except ValueError as exc:
+        logger.warning("Telefone invalido para WhatsApp: %s", exc)
+    except Exception as exc:
+        logger.warning("WhatsApp z-api erro: %s", exc)

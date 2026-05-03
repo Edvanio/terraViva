@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     openai_vision_model: str = "gpt-4o"
     openai_image_model: str = "dall-e-2"
 
+    # Z-API (WhatsApp)
+    zapi_instance_id: str = ""
+    zapi_token: str = ""
+    zapi_client_token: str = ""
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

@@ -7,9 +7,31 @@ from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
 from dependencies import get_current_user
 from models import ReservationCreate, ReservationResponse, ReservationStatusUpdate
-from utils import send_push_notification
+from utils import send_push_notification, send_whatsapp
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Helper: dispara notificação DB + push + WhatsApp em background
+# ---------------------------------------------------------------------------
+def _notify(db, user_id, notif_type: str, title: str, body: str, reservation_id, push_token: str | None = None, phone: str | None = None):
+    """Cria registro no DB e dispara push/WhatsApp de forma fire-and-forget."""
+    db.notifications.insert_one({
+        "user_id": user_id,
+        "type": notif_type,
+        "title": title,
+        "body": body,
+        "reservation_id": reservation_id,
+        "read": False,
+        "created_at": datetime.now(timezone.utc),
+    })
+    if push_token:
+        threading.Thread(target=send_push_notification, args=(push_token, title, body), daemon=True).start()
+    if phone:
+        whatsapp_msg = f"*{title}*\n{body}"
+        threading.Thread(target=send_whatsapp, args=(phone, whatsapp_msg), daemon=True).start()
+
 
 
 def _to_response(document: dict, db=None) -> ReservationResponse:
@@ -95,18 +117,21 @@ def create_reservation(payload: ReservationCreate, user: dict = Depends(get_curr
     result = db.reservations.insert_one(reservation)
     created = db.reservations.find_one({"_id": result.inserted_id})
 
-    # Push notification para o produtor (fire-and-forget)
+    # Notifica o produtor: DB + push + WhatsApp
     producer_user = db.users.find_one({"_id": product["user_id"]})
-    if producer_user and producer_user.get("expo_push_token"):
-        threading.Thread(
-            target=send_push_notification,
-            args=(
-                producer_user["expo_push_token"],
-                "Novo pedido!",
-                f"{product['name']} (x{payload.quantity}) - {payload.pickup_location}",
-            ),
-            daemon=True,
-        ).start()
+    consumer_name = user.get("name") or "Cliente"
+    title = "📦 Novo pedido!"
+    body = f"{consumer_name} pediu {product['name']} (x{payload.quantity}) — {payload.pickup_location}"
+    _notify(
+        db,
+        user_id=product["user_id"],
+        notif_type="new_order",
+        title=title,
+        body=body,
+        reservation_id=result.inserted_id,
+        push_token=producer_user.get("expo_push_token") if producer_user else None,
+        phone=producer_user.get("phone") if producer_user else None,
+    )
 
     return _to_response(created)
 
@@ -143,32 +168,45 @@ def update_reservation_status(
     )
     updated = db.reservations.find_one({"_id": reservation["_id"]})
 
-    # Notifica o consumidor quando o produtor confirma o pedido
+    consumer = db.users.find_one({"_id": reservation["consumer_id"]})
+    producer_name = user.get("name") or "Produtor"
+    product_name = reservation.get("product_name", "produto")
+    consumer_push = consumer.get("expo_push_token") if consumer else None
+    consumer_phone = consumer.get("phone") if consumer else None
+
     if payload.status == "confirmed":
-        consumer = db.users.find_one({"_id": reservation["consumer_id"]})
-        producer_name = user.get("name") or "Produtor"
-        product_name = reservation.get("product_name", "produto")
-        # Grava notificação para polling web
-        db.notifications.insert_one({
-            "user_id": reservation["consumer_id"],
-            "type": "order_confirmed",
-            "title": "Pedido confirmado! 🎉",
-            "body": f"{producer_name} confirmou seu pedido de {product_name}.",
-            "reservation_id": reservation["_id"],
-            "read": False,
-            "created_at": datetime.now(timezone.utc),
-        })
-        # Push para app mobile (fire-and-forget)
-        if consumer and consumer.get("expo_push_token"):
-            threading.Thread(
-                target=send_push_notification,
-                args=(
-                    consumer["expo_push_token"],
-                    "Pedido confirmado! 🎉",
-                    f"{producer_name} confirmou seu pedido de {product_name}.",
-                ),
-                daemon=True,
-            ).start()
+        _notify(
+            db,
+            user_id=reservation["consumer_id"],
+            notif_type="order_confirmed",
+            title="🎉 Pedido confirmado!",
+            body=f"{producer_name} confirmou seu pedido de {product_name}.",
+            reservation_id=reservation["_id"],
+            push_token=consumer_push,
+            phone=consumer_phone,
+        )
+    elif payload.status == "collected":
+        _notify(
+            db,
+            user_id=reservation["consumer_id"],
+            notif_type="order_collected",
+            title="✅ Pedido coletado!",
+            body=f"Seu pedido de {product_name} foi marcado como coletado por {producer_name}.",
+            reservation_id=reservation["_id"],
+            push_token=consumer_push,
+            phone=consumer_phone,
+        )
+    elif payload.status == "cancelled":
+        _notify(
+            db,
+            user_id=reservation["consumer_id"],
+            notif_type="order_cancelled_by_producer",
+            title="❌ Pedido cancelado",
+            body=f"{producer_name} cancelou seu pedido de {product_name}.",
+            reservation_id=reservation["_id"],
+            push_token=consumer_push,
+            phone=consumer_phone,
+        )
 
     return _to_response(updated)
 
@@ -191,4 +229,20 @@ def cancel_reservation(
         {"$set": {"status": "cancelled", "updated_at": datetime.now(timezone.utc)}},
     )
     updated = db.reservations.find_one({"_id": reservation["_id"]})
+
+    # Notifica o produtor que o consumidor cancelou
+    producer = db.users.find_one({"_id": reservation["producer_id"]})
+    consumer_name = user.get("name") or "Cliente"
+    product_name = reservation.get("product_name", "produto")
+    _notify(
+        db,
+        user_id=reservation["producer_id"],
+        notif_type="order_cancelled_by_consumer",
+        title="❌ Pedido cancelado",
+        body=f"{consumer_name} cancelou o pedido de {product_name}.",
+        reservation_id=reservation["_id"],
+        push_token=producer.get("expo_push_token") if producer else None,
+        phone=producer.get("phone") if producer else None,
+    )
+
     return _to_response(updated)
