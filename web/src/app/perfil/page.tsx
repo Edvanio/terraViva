@@ -504,6 +504,15 @@ function PerfilContent() {
         {saving && (
           <p className="text-center text-xs text-textSecondary animate-pulse">Salvando...</p>
         )}
+
+        {/* Botão Sair */}
+        <button
+          type="button"
+          onClick={() => clearSession()}
+          className="mt-6 w-full rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100"
+        >
+          Sair da conta
+        </button>
       </div>
     </div>
   );
