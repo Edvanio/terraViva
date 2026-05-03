@@ -220,8 +220,11 @@ export default function MinhaBancaPage() {
     setNewCategory(product.category ?? "");
     setNewUnit(product.unit ?? "unidade");
     setNewPhoto(product.photo_url ?? "");
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function closeEdit() {
+    setEditingId(null);
+    setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade");
   }
 
   async function addProduct(e: React.FormEvent) {
@@ -246,10 +249,11 @@ export default function MinhaBancaPage() {
     });
     setSaving(false);
     if (res.ok) {
+      const wasEditing = !!editingId;
       setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade");
       setEditingId(null);
       setShowForm(false);
-      toast(editingId ? "Produto atualizado! ✅" : "Produto adicionado! ✅");
+      toast(wasEditing ? "Produto atualizado! ✅" : "Produto adicionado! ✅");
       await loadData();
     } else {
       toast("Não conseguimos salvar. Tente de novo.", "error");
@@ -473,7 +477,7 @@ export default function MinhaBancaPage() {
             </button>
           ) : (
             <div className="flex justify-end">
-              <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setEditingId(null); setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade"); }}>
+              <Button size="sm" variant="secondary" onClick={() => { setShowForm(false); setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade"); }}>
                 ✕ Cancelar
               </Button>
             </div>
@@ -703,6 +707,133 @@ export default function MinhaBancaPage() {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal de edição de produto */}
+      {editingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+          <form onSubmit={addProduct} className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-card space-y-4 animate-fade-in my-8">
+            <h3 className="text-lg font-bold text-textPrimary text-center">✏️ Editar produto</h3>
+            <Input
+              placeholder="Nome do produto"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              required
+            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-textSecondary">R$</span>
+              <Input
+                placeholder="28,00"
+                inputMode="decimal"
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+                className="pl-9"
+                required
+              />
+            </div>
+            <Input
+              placeholder="Descrição (opcional)"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
+
+            {/* Categoria */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-textSecondary">Categoria</p>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setNewCategory(newCategory === cat.value ? "" : cat.value)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${
+                      newCategory === cat.value
+                        ? "border-primary bg-primary text-white shadow-sm"
+                        : "border-border bg-surface text-textSecondary hover:border-primary hover:text-primary hover:bg-primary-subtle"
+                    }`}
+                  >
+                    <span className="text-base">{cat.icon}</span>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Unidade */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-textSecondary">Unidade</p>
+              <select
+                value={newUnit}
+                onChange={(e) => setNewUnit(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+              >
+                <option value="unidade">Unidade</option>
+                <option value="kg">Kg</option>
+                <option value="g">Gramas</option>
+                <option value="litro">Litro</option>
+                <option value="ml">ml</option>
+                <option value="duzia">Dúzia</option>
+                <option value="pe">Pé</option>
+                <option value="bandeja">Bandeja</option>
+                <option value="pote">Pote</option>
+                <option value="fatia">Fatia</option>
+                <option value="pacote">Pacote</option>
+                <option value="saco">Saco</option>
+                <option value="maco">Maço</option>
+              </select>
+            </div>
+
+            {/* Foto */}
+            <div>
+              {newPhoto ? (
+                <div className="relative inline-block">
+                  <Image
+                    src={newPhoto}
+                    alt="Foto do produto"
+                    width={80}
+                    height={80}
+                    unoptimized
+                    className="h-20 w-20 rounded-xl object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setNewPhoto("")}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <PhotoPickerPopup onFileSelected={uploadProductPhoto} disabled={uploadingPhoto}>
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    className="flex items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-textSecondary transition hover:border-primary hover:text-primary disabled:opacity-60"
+                  >
+                    📷 {uploadingPhoto ? "Enviando..." : "Adicionar foto"}
+                  </button>
+                </PhotoPickerPopup>
+              )}
+            </div>
+
+            {/* Ações */}
+            <div className="flex flex-col gap-2 pt-2">
+              <Button type="submit" size="sm" className="w-full text-base py-3" disabled={saving || uploadingPhoto}>
+                {uploadingPhoto ? "Enviando foto..." : saving ? "Salvando..." : "✅ Salvar alterações"}
+              </Button>
+              <Button type="button" size="sm" variant="secondary" className="w-full text-base py-3" onClick={closeEdit}>
+                ✕ Cancelar
+              </Button>
+              <button
+                type="button"
+                onClick={() => { closeEdit(); setConfirmDelete({ id: editingId, name: newName }); }}
+                className="w-full rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+              >
+                🗑️ Excluir produto
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
