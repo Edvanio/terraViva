@@ -59,7 +59,7 @@ export function BancaCard({ banca }: { banca: Banca }) {
         </p>
 
         <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs text-textSecondary">
+          <div className="flex items-center gap-1.5 text-sm text-textSecondary">
             <span className="text-amber">&#9733;</span>
             <span className="font-bold text-textPrimary">4.9</span>
             <span>· {productCount} produto{productCount !== 1 ? "s" : ""}</span>

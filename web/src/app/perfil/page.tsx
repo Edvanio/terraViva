@@ -454,7 +454,7 @@ function PerfilContent() {
             required
           />
           {geoHint?.city || geoHint?.state ? (
-            <div className="mt-2 flex items-center gap-2 text-xs">
+            <div className="mt-2 flex items-center gap-2 text-sm">
               <span className="rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
                 📍 {geoHint.city ?? "Cidade"}{geoHint.state ? `, ${geoHint.state}` : ""}
               </span>
@@ -470,7 +470,7 @@ function PerfilContent() {
             <div className="flex items-center gap-2 rounded-xl border border-border bg-border/30 px-3 py-2.5">
               <span className="text-base">📍</span>
               <span className="flex-1 text-sm text-textPrimary">{form.city || `${geoHint?.city ?? ""}${geoHint?.state ? `, ${geoHint.state}` : ""}`}</span>
-              <span className="text-xs text-textSecondary">detectado via IA</span>
+              <span className="text-sm text-textSecondary">detectado via IA</span>
             </div>
           </div>
         )}
@@ -495,7 +495,7 @@ function PerfilContent() {
           <div className="flex items-center gap-2 rounded-xl border border-border bg-border/30 px-3 py-2.5">
             <span className="text-base">🔒</span>
             <span className="flex-1 text-sm text-textPrimary">{form.phone}</span>
-            <span className="text-xs text-textSecondary">número de login</span>
+            <span className="text-sm text-textSecondary">número de login</span>
           </div>
         </div>
 

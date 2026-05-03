@@ -278,7 +278,7 @@ export default function MinhaBancaPage() {
         >
           📦 Pedidos recebidos
           {orders.filter((o) => o.status === "pending").length > 0 && (
-            <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-white">
+            <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-xs text-white">
               {orders.filter((o) => o.status === "pending").length}
             </span>
           )}
@@ -333,7 +333,7 @@ export default function MinhaBancaPage() {
                     </div>
 
                     {order.product_description && (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-textSecondary">{order.product_description}</p>
+                      <p className="mt-0.5 line-clamp-1 text-sm text-textSecondary">{order.product_description}</p>
                     )}
 
                     {/* Preço destaque */}
@@ -344,13 +344,13 @@ export default function MinhaBancaPage() {
 
                     {/* Quem pediu + entrega + pagamento */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-sm font-medium text-primary">
                         🧑‍🌾 {displayName}
                       </span>
-                      <span className="rounded-full bg-background px-2 py-0.5 text-xs text-textSecondary">
+                      <span className="rounded-full bg-background px-2 py-0.5 text-sm text-textSecondary">
                         {PICKUP_LABEL[order.pickup_location] ?? order.pickup_location}
                       </span>
-                      <span className="rounded-full bg-background px-2 py-0.5 text-xs text-textSecondary">
+                      <span className="rounded-full bg-background px-2 py-0.5 text-sm text-textSecondary">
                         {PAYMENT_LABEL[order.payment_intent] ?? order.payment_intent}
                       </span>
                     </div>
@@ -427,7 +427,7 @@ export default function MinhaBancaPage() {
               <span className="relative text-3xl">🧺</span>
               <div className="relative text-center">
                 <p className="text-base font-bold leading-tight">Adicionar produto</p>
-                <p className="mt-0.5 text-xs text-white/75">A IA analisa a foto e preenche pra você</p>
+                <p className="mt-0.5 text-sm text-white/75">A IA analisa a foto e preenche pra você</p>
               </div>
             </button>
           ) : (
@@ -555,7 +555,7 @@ export default function MinhaBancaPage() {
                         R$ {product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </p>
                       {product.category && (
-                        <span className="text-xs text-textSecondary">
+                        <span className="text-sm text-textSecondary">
                           {CATEGORIES.find((c) => c.value === product.category)?.icon} {CATEGORIES.find((c) => c.value === product.category)?.label}
                         </span>
                       )}

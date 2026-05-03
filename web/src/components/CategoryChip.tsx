@@ -27,7 +27,7 @@ export function CategoryChip({ label, icon, active = false, onClick }: Props) {
       type="button"
       onClick={onClick}
       className={
-        `inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+        `inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold transition-all ${
           active
             ? "border-primary bg-primary text-white shadow-sm"
             : "border-border bg-surface text-textSecondary hover:border-primary hover:text-primary hover:bg-primary-subtle"

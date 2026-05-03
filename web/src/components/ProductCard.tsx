@@ -44,7 +44,7 @@ export function ProductCard({ product, bancaId }: { product: Product; bancaId: s
         {/* Badge de categoria sobre a imagem */}
         {product.category && (
           <span
-            className="absolute left-3 top-3 inline-flex rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-bold backdrop-blur-sm"
+            className="absolute left-3 top-3 inline-flex rounded-full bg-surface/90 px-2.5 py-1 text-xs font-bold backdrop-blur-sm"
             style={categoryStyle}
           >
             {getCategoryIcon(product.category)} {product.category}
