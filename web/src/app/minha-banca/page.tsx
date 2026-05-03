@@ -537,7 +537,7 @@ export default function MinhaBancaPage() {
                 <select
                   value={newUnit}
                   onChange={(e) => setNewUnit(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                  className="w-full h-[42px] rounded-xl border border-border bg-background px-3 text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M6%208L1%203h10z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8"
                 >
                   <option value="unidade">Unidade</option>
                   <option value="kg">Kg</option>
@@ -712,61 +712,34 @@ export default function MinhaBancaPage() {
 
       {/* Modal de edição de produto */}
       {editingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <form onSubmit={addProduct} className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-card space-y-4 animate-fade-in my-8">
-            <h3 className="text-lg font-bold text-textPrimary text-center">✏️ Editar produto</h3>
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto">
+          <form onSubmit={addProduct} className="w-full sm:max-w-md min-h-screen sm:min-h-0 sm:max-h-[85vh] overflow-y-auto sm:rounded-2xl sm:border sm:border-border/50 bg-surface p-5 shadow-2xl space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-textPrimary">✏️ Editar produto</h3>
+              <button type="button" onClick={closeEdit} className="text-textSecondary text-xl leading-none">✕</button>
+            </div>
             <Input
               placeholder="Nome do produto"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               required
             />
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-textSecondary">R$</span>
-              <Input
-                placeholder="28,00"
-                inputMode="decimal"
-                value={newPrice}
-                onChange={(e) => setNewPrice(e.target.value)}
-                className="pl-9"
-                required
-              />
-            </div>
-            <Input
-              placeholder="Descrição (opcional)"
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-            />
-
-            {/* Categoria */}
-            <div>
-              <p className="mb-2 text-sm font-medium text-textSecondary">Categoria</p>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.value}
-                    type="button"
-                    onClick={() => setNewCategory(newCategory === cat.value ? "" : cat.value)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${
-                      newCategory === cat.value
-                        ? "border-primary bg-primary text-white shadow-sm"
-                        : "border-border bg-surface text-textSecondary hover:border-primary hover:text-primary hover:bg-primary-subtle"
-                    }`}
-                  >
-                    <span className="text-base">{cat.icon}</span>
-                    {cat.label}
-                  </button>
-                ))}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-textSecondary">R$</span>
+                <Input
+                  placeholder="28,00"
+                  inputMode="decimal"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  className="pl-9"
+                  required
+                />
               </div>
-            </div>
-
-            {/* Unidade */}
-            <div>
-              <p className="mb-2 text-sm font-medium text-textSecondary">Unidade</p>
               <select
                 value={newUnit}
                 onChange={(e) => setNewUnit(e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M6%208L1%203h10z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-8"
               >
                 <option value="unidade">Unidade</option>
                 <option value="kg">Kg</option>
@@ -783,23 +756,50 @@ export default function MinhaBancaPage() {
                 <option value="maco">Maço</option>
               </select>
             </div>
+            <Input
+              placeholder="Descrição (opcional)"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
+
+            {/* Categoria */}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-textSecondary">Categoria</p>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setNewCategory(newCategory === cat.value ? "" : cat.value)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-all ${
+                      newCategory === cat.value
+                        ? "border-primary bg-primary text-white shadow-sm"
+                        : "border-border bg-surface text-textSecondary"
+                    }`}
+                  >
+                    <span className="text-sm">{cat.icon}</span>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Foto */}
-            <div>
+            <div className="flex items-center gap-3">
               {newPhoto ? (
-                <div className="relative inline-block">
+                <div className="relative">
                   <Image
                     src={newPhoto}
                     alt="Foto do produto"
-                    width={80}
-                    height={80}
+                    width={56}
+                    height={56}
                     unoptimized
-                    className="h-20 w-20 rounded-xl object-cover"
+                    className="h-14 w-14 rounded-xl object-cover"
                   />
                   <button
                     type="button"
                     onClick={() => setNewPhoto("")}
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white"
+                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[8px] text-white"
                   >
                     ✕
                   </button>
@@ -809,28 +809,28 @@ export default function MinhaBancaPage() {
                   <button
                     type="button"
                     disabled={uploadingPhoto}
-                    className="flex items-center gap-2 rounded-xl border border-dashed border-border px-4 py-3 text-sm text-textSecondary transition hover:border-primary hover:text-primary disabled:opacity-60"
+                    className="flex items-center gap-2 rounded-xl border border-dashed border-border px-3 py-2 text-xs text-textSecondary transition hover:border-primary hover:text-primary disabled:opacity-60"
                   >
-                    📷 {uploadingPhoto ? "Enviando..." : "Adicionar foto"}
+                    📷 {uploadingPhoto ? "Enviando..." : "Foto"}
                   </button>
                 </PhotoPickerPopup>
               )}
             </div>
 
             {/* Ações */}
-            <div className="flex flex-col gap-2 pt-2">
-              <Button type="submit" size="sm" className="w-full text-base py-3" disabled={saving || uploadingPhoto}>
-                {uploadingPhoto ? "Enviando foto..." : saving ? "Salvando..." : "✅ Salvar alterações"}
+            <div className="flex gap-2 pt-2 sticky bottom-0 bg-surface pb-1">
+              <Button type="submit" size="sm" className="flex-1 py-2.5" disabled={saving || uploadingPhoto}>
+                {saving ? "Salvando..." : "✅ Salvar"}
               </Button>
-              <Button type="button" size="sm" variant="secondary" className="w-full text-base py-3" onClick={closeEdit}>
+              <Button type="button" size="sm" variant="secondary" className="flex-1 py-2.5" onClick={closeEdit}>
                 ✕ Cancelar
               </Button>
               <button
                 type="button"
                 onClick={() => { closeEdit(); setConfirmDelete({ id: editingId, name: newName }); }}
-                className="w-full rounded-xl border border-red-200 bg-red-50 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-lg text-red-600 transition hover:bg-red-100"
               >
-                🗑️ Excluir produto
+                🗑️
               </button>
             </div>
           </form>
