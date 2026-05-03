@@ -28,13 +28,13 @@ export default function PhotoPickerPopup({ onFileSelected, disabled, children }:
       {open && (
         <>
           {/* backdrop */}
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setOpen(false)} />
 
-          {/* popup */}
-          <div className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 rounded-xl border border-border bg-white p-2 shadow-lg min-w-[180px]">
+          {/* popup centralizado */}
+          <div className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-white p-3 shadow-xl min-w-[220px]">
             <button
               type="button"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-textPrimary transition hover:bg-gray-100"
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-textPrimary transition hover:bg-gray-100"
               onClick={() => { cameraRef.current?.click(); }}
             >
               <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -45,13 +45,20 @@ export default function PhotoPickerPopup({ onFileSelected, disabled, children }:
             </button>
             <button
               type="button"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-textPrimary transition hover:bg-gray-100"
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-textPrimary transition hover:bg-gray-100"
               onClick={() => { galleryRef.current?.click(); }}
             >
               <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 19.5V4.5A2.25 2.25 0 0 0 20.25 2.25H3.75A2.25 2.25 0 0 0 1.5 4.5v15A2.25 2.25 0 0 0 3.75 21Z" />
               </svg>
               Buscar na galeria
+            </button>
+            <button
+              type="button"
+              className="mt-1 flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm text-textSecondary transition hover:bg-gray-100"
+              onClick={() => setOpen(false)}
+            >
+              Cancelar
             </button>
           </div>
         </>
