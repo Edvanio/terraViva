@@ -129,20 +129,20 @@ export default function PedidosPage() {
               {order.producer_phone && (
                 <a
                   href={(() => {
-                    const pickup = { feira: "Na feira", produtor: "Buscar no produtor", entrega: "Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
-                    const payment = { cash: "Dinheiro", pix: "Pix", card: "Cartao" }[order.payment_intent] ?? order.payment_intent;
+                    const pickup = { feira: "\u{1F3EA} Na feira", produtor: "\u{1F3E1} Buscar no produtor", entrega: "\u{1F697} Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
+                    const payment = { cash: "\u{1F4B5} Dinheiro", pix: "\u{1F4F2} Pix", card: "\u{1F4B3} Cart\u00e3o" }[order.payment_intent] ?? order.payment_intent;
                     const msg = [
-                      `Ola${order.producer_name ? `, *${order.producer_name}*` : ""}!`,
+                      `Ol\u00e1! \u{1F44B}`,
                       ``,
                       `Sou cliente do *Terra Viva* e fiz um pedido pelo app:`,
                       ``,
-                      `- *${order.product_name}*`,
-                      `- Quantidade: ${order.quantity}x`,
-                      `- Total: *R$ ${order.total_price.toFixed(2).replace(".", ",")}*`,
-                      `- Retirada: ${pickup}`,
-                      `- Pagamento: ${payment}`,
+                      `\u{1F6D2} *${order.product_name}*`,
+                      `\u{1F4E6} Quantidade: ${order.quantity}x`,
+                      `\u{1F4B0} Total: *R$ ${order.total_price.toFixed(2).replace(".", ",")}*`,
+                      `\u{1F4CD} Retirada: ${pickup}`,
+                      `${payment}`,
                       ``,
-                      `Gostaria de confirmar os detalhes. Obrigado!`,
+                      `Gostaria de confirmar os detalhes. Obrigado! \u{1F33F}`,
                     ].join("\n");
                     return `https://wa.me/55${order.producer_phone.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
                   })()}
