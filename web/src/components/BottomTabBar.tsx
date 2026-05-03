@@ -5,7 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-const TABS_LOGGED = [
+interface Tab {
+  href: string;
+  label: string;
+  icon: string;
+  activeIcon: string;
+  badge?: boolean;
+}
+
+const TABS_LOGGED: Tab[] = [
   { href: "/", label: "Início", icon: "🏠", activeIcon: "🏡" },
   { href: "/bancas", label: "Produtores", icon: "🌱", activeIcon: "🌿" },
   { href: "/pedidos", label: "Pedidos", icon: "📋", activeIcon: "📋", badge: true },
@@ -13,7 +21,7 @@ const TABS_LOGGED = [
   { href: "/perfil", label: "Perfil", icon: "👤", activeIcon: "👤" },
 ];
 
-const TABS_GUEST = [
+const TABS_GUEST: Tab[] = [
   { href: "/", label: "Início", icon: "🏠", activeIcon: "🏡" },
   { href: "/bancas", label: "Produtores", icon: "🌱", activeIcon: "🌿" },
   { href: "/login?redirect=%2Fminha-banca", label: "Vender", icon: "🌽", activeIcon: "🌽" },
@@ -48,7 +56,7 @@ export function BottomTabBar() {
       const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
       fetch(`${base}/notifications`, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.ok ? r.json() : [])
-        .then((data: { id: string }[]) => setUnreadCount(Array.isArray(data) ? data.length : 0))
+        .then((data: unknown[]) => setUnreadCount(Array.isArray(data) ? data.length : 0))
         .catch(() => {});
     }
     fetchNotifs();
@@ -64,7 +72,7 @@ export function BottomTabBar() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const tabs = mounted && isLoggedIn ? TABS_LOGGED : TABS_GUEST;
+  const tabs: Tab[] = mounted && isLoggedIn ? TABS_LOGGED : TABS_GUEST;
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -76,7 +84,7 @@ export function BottomTabBar() {
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom,0px)]">
         {tabs.map((tab) => {
           const active = isActive(tab.href);
-          const showBadge = "badge" in tab && tab.badge && unreadCount > 0 && !active;
+          const showBadge = tab.badge === true && unreadCount > 0 && !active;
           return (
             <Link
               key={tab.href}
@@ -102,100 +110,6 @@ export function BottomTabBar() {
                 {tab.label}
               </span>
               {active && <span className="mt-0.5 h-1 w-5 rounded-full bg-primary" />}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
-const TABS_LOGGED = [
-  { href: "/", label: "In\u00edcio", icon: "\u{1F3E0}", activeIcon: "\u{1F3E1}" },
-  { href: "/bancas", label: "Produtores", icon: "\u{1F331}", activeIcon: "\u{1F33F}" },
-  { href: "/pedidos", label: "Pedidos", icon: "\u{1F4CB}", activeIcon: "\u{1F4CB}" },
-  { href: "/minha-banca", label: "Vender", icon: "\u{1F33D}", activeIcon: "\u{1F33D}" },
-  { href: "/perfil", label: "Perfil", icon: "\u{1F464}", activeIcon: "\u{1F464}" },
-];
-
-const TABS_GUEST = [
-  { href: "/", label: "In\u00edcio", icon: "\u{1F3E0}", activeIcon: "\u{1F3E1}" },
-  { href: "/bancas", label: "Produtores", icon: "\u{1F331}", activeIcon: "\u{1F33F}" },  { href: "/login?redirect=%2Fminha-banca", label: "Vender", icon: "\u{1F33D}", activeIcon: "\u{1F33D}" },  { href: "/login", label: "Entrar", icon: "\u{1F511}", activeIcon: "\u{1F511}" },
-];
-
-export function BottomTabBar() {
-  const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-    const token = localStorage.getItem("terra_viva_token");
-    setIsLoggedIn(!!token);
-    if (token) {
-      const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost/api";
-      fetch(`${base}/producer/profile`, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => res.ok ? res.json() : null)
-        .then((data) => { if (data?.photo_url) setProfilePhoto(data.photo_url); })
-        .catch(() => {});
-    }
-  }, [pathname]);
-
-  // Escuta mudanças no localStorage (logout em outra aba ou clearSession)
-  useEffect(() => {
-    function onStorage(e: StorageEvent) {
-      if (e.key === "terra_viva_token") {
-        setIsLoggedIn(!!e.newValue);
-      }
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  // Evita hydration mismatch: sempre renderiza GUEST no server
-  const tabs = mounted && isLoggedIn ? TABS_LOGGED : TABS_GUEST;
-
-  function isActive(href: string) {
-    if (href === "/") return pathname === "/";
-    return pathname.startsWith(href);
-  }
-
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 backdrop-blur-lg shadow-tab md:hidden">
-      <div className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom,0px)]">
-        {tabs.map((tab) => {
-          const active = isActive(tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-center transition-all ${
-                active
-                  ? "text-primary scale-105"
-                  : "text-textSecondary hover:text-primary"
-              }`}
-            >
-              <span className={`text-xl ${active ? "drop-shadow-sm" : ""}`}>
-                {tab.href === "/perfil" && profilePhoto ? (
-                  <Image
-                    src={profilePhoto}
-                    alt="Perfil"
-                    width={24}
-                    height={24}
-                    unoptimized
-                    className="h-6 w-6 rounded-full object-cover border border-border"
-                  />
-                ) : (
-                  active ? tab.activeIcon : tab.icon
-                )}
-              </span>
-              <span className={`text-xs font-semibold leading-tight ${active ? "font-bold" : ""}`}>
-                {tab.label}
-              </span>
-              {active && (
-                <span className="mt-0.5 h-1 w-5 rounded-full bg-primary" />
-              )}
             </Link>
           );
         })}
