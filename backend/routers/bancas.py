@@ -33,6 +33,7 @@ def list_bancas():
             cover_url=user.get("cover_url"),
             categories=categories,
             products_count=len(products),
+            badges=user.get("badges", []),
         ))
     return result
 
@@ -65,6 +66,7 @@ def get_banca(banca_id: str):
         "photo_url": user.get("photo_url"),
         "cover_url": user.get("cover_url"),
         "gallery": user.get("gallery", []),
+        "badges": user.get("badges", []),
         "address": user.get("address"),
         "pix_key": user.get("pix_key"),
         "fair_location": user.get("fair_location"),

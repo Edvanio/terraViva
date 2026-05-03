@@ -463,8 +463,8 @@ export default function MinhaBancaPage() {
                   {order.consumer_phone && (
                     <a
                       href={(() => {
-                        const pickup = { feira: "🏪 Na feira", produtor: "🏡 Buscar no produtor", entrega: "🚗 Entrega em casa" }[order.pickup_location] ?? order.pickup_location;
-                        const payment = { cash: "💵 Dinheiro", pix: "📲 Pix", card: "💳 Cartão" }[order.payment_intent] ?? order.payment_intent;
+                        const pickup = PICKUP_LABEL[order.pickup_location] ?? order.pickup_location;
+                        const payment = PAYMENT_LABEL[order.payment_intent] ?? order.payment_intent;
                         const msg = [
                           `Olá${order.consumer_name ? `, *${order.consumer_name}*` : "!"}! 👋`,
                           ``,

@@ -23,7 +23,7 @@
 
 ### 2. Vitrine de Bancas (Público)
 **Descrição**: Listagem pública de produtores que possuem produtos ativos.  
-**Casos de Uso**: Consumidor navega produtores sem login.  
+**Casos de Uso**: Qualquer pessoa — consumidor final ou outro produtor — navega as bancas sem login. Como cada produtor vende produtos diferentes, é comum que produtores comprem entre si (ex: quem faz queijo compra verduras de outro).  
 **Componentes**:
 - `backend/routers/bancas.py` — GET /bancas, GET /bancas/{id}
 - `web/src/app/bancas/page.tsx` — Listagem SSR
@@ -87,16 +87,40 @@
 5. Na retirada → status `collected`
 6. Consumidor pode cancelar se ainda `pending`
 
-**Status possíveis**: `pending` → `confirmed` → `collected` | `cancelled`
+**Status possíveis**: `pending` → `confirmed` → `collected` | `cancelled` | `fiado`
+
+**Sistema Fiado**: Produtor pode marcar pedido como "fiado" — o cliente leva o produto e paga depois. Na tela do produtor há 3 tabs: Pedidos, Fiados e Produtos. Tab "Fiados" filtra reservas com status `fiado`. Ações disponíveis: ✅ Pago (muda para `collected`), ❌ Cancelar.
 
 ---
 
 ### 6. Perfil do Produtor
 **Descrição**: Produtor configura seu perfil público (nome, bio, cidade, foto, capa, meios de pagamento, chave Pix).  
 **Componentes**:
-- `backend/routers/producers.py` — GET/PUT profile, upload foto/capa
+- `backend/routers/producers.py` — GET/PUT profile, upload foto/capa, geocode
 - `web/src/app/perfil/page.tsx` — Formulário de perfil
+- `web/src/components/CustomerInfoPrompt.tsx` — Prompt de nome/cidade (consumidores)
 - Upload de avatar e capa para DO Spaces
+
+**Geolocalização**:
+- Botão "📍 Usar minha localização" usa `navigator.geolocation` + reverse geocode via **Nominatim/OpenStreetMap** (gratuito, sem API key)
+- Detecta cidade e UF automaticamente pelas coordenadas GPS
+- Chip exibe a cidade detectada abaixo do campo endereço
+- Fallback: geocode via OpenAI GPT-4o-mini quando o endereço é digitado (prompt otimizado para diferenciar nomes de rua vs município)
+
+---
+
+### 6b. Identificação do Consumidor (CustomerInfoPrompt)
+**Descrição**: Antes de fazer o primeiro pedido, o consumidor é solicitado a informar nome (obrigatório) e cidade (opcional).  
+**Componentes**:
+- `web/src/components/CustomerInfoPrompt.tsx` — Componente 2 steps
+- `web/src/app/banca/[id]/reservar/page.tsx` — Integração no checkout
+
+**Fluxo**:
+1. Ao acessar reserva, busca `GET /producer/profile`
+2. Se `name == null`, exibe prompt "👋 Qual o seu nome?"
+3. Após nome, exibe "📍 Onde você mora?" (com botão "Pular")
+4. Salva via `PUT /producer/profile`
+5. Formulário de reserva aparece
 
 ---
 
@@ -140,6 +164,25 @@
 - Guest: Início, Produtores, Entrar
 - Logado: Início, Produtores, Pedidos, Vender, Perfil
 - Escuta `storage` events para reagir a logout em tempo real
+
+---
+
+### Pagamento Padrão Pix
+- Na tela de reserva, o pagamento padrão mudou de "Dinheiro" para **"Pix"**
+- Reflete o uso real dos produtores da região
+
+### Favicon Terra Viva
+- Ícone SVG customizado (broto verde em fundo #2d6a4f) em `web/src/app/icon.svg`
+- Next.js App Router detecta automaticamente
+- `themeColor: "#2d6a4f"` no metadata do layout
+
+### Quantidade Destacada nos Pedidos
+- Cards de pedido exibem `📦 Nx Nome do Produto` com badge visual
+- Facilita leitura rápida da quantidade no painel do produtor
+
+### WhatsApp com Labels Unificados
+- Mensagem WhatsApp usa constantes `PICKUP_LABEL` e `PAYMENT_LABEL` para manter consistência
+- Evita duplicação de labels entre exibição e mensagem
 
 ---
 

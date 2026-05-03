@@ -31,6 +31,7 @@ interface ProfileData {
   pix_key: string;
   fair_location: string;
   payment_methods: string[];
+  badges: string[];
   phone: string;
   photo_url: string | null;
   cover_url: string | null;
@@ -44,10 +45,20 @@ const EMPTY: ProfileData = {
   pix_key: "",
   fair_location: "",
   payment_methods: ["cash", "pix"],
+  badges: [],
   phone: "",
   photo_url: null,
   cover_url: null,
 };
+
+const BADGE_OPTIONS = [
+  { value: "organico", label: "🌿 Orgânico" },
+  { value: "agroecologico", label: "🌎 Agroecológico" },
+  { value: "familiar", label: "👨‍👩‍👧 Agricultura Familiar" },
+  { value: "sem_agrotoxicos", label: "🚫 Sem Agrotóxicos" },
+  { value: "artesanal", label: "🧶 Artesanal" },
+  { value: "colonial", label: "🏡 Colonial" },
+];
 
 export default function PerfilPage() {
   return (
@@ -69,6 +80,7 @@ function PerfilContent() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [geoHint, setGeoHint] = useState<{ city: string | null; state: string | null } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
   const { toast } = useToast();
   const [loaded, setLoaded] = useState(false);
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,6 +121,7 @@ function PerfilContent() {
           pix_key: data.pix_key ?? "",
           fair_location: data.fair_location ?? "",
           payment_methods: data.payment_methods ?? ["cash"],
+          badges: data.badges ?? [],
           phone: formatPhone(data.phone || tokenPhone),
           photo_url: data.photo_url ?? null,
           cover_url: data.cover_url ?? null,
@@ -154,6 +167,54 @@ function PerfilContent() {
 
     return () => clearTimeout(timer);
   }, [form.address, base]);
+
+  async function handleUseMyLocation() {
+    if (!navigator.geolocation) {
+      toast("Geolocalização não suportada neste navegador.", "error");
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=pt-BR`,
+            { headers: { "User-Agent": "TerraViva/1.0" } },
+          );
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          const addr = data.address ?? {};
+          const city: string =
+            addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+          const stateCode: string = addr["ISO3166-2-lvl4"]
+            ? (addr["ISO3166-2-lvl4"] as string).split("-").pop() ?? ""
+            : addr.state ?? "";
+          if (city) {
+            const cityState = [city, stateCode].filter(Boolean).join(", ");
+            setGeoHint({ city, state: stateCode || null });
+            setForm((prev) => ({ ...prev, city: cityState }));
+            toast(`📍 Localização detectada: ${cityState}`);
+          } else {
+            toast("Não foi possível identificar sua cidade.", "error");
+          }
+        } catch {
+          toast("Erro ao buscar localização.", "error");
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast("Permissão de localização negada.", "error");
+        } else {
+          toast("Não foi possível obter sua localização.", "error");
+        }
+      },
+      { timeout: 10000 },
+    );
+  }
 
   async function uploadFile(file: File): Promise<string | null> {
     const token = getToken();
@@ -237,6 +298,7 @@ function PerfilContent() {
 
   // Auto-save com debounce
   const paymentMethodsKey = JSON.stringify(form.payment_methods);
+  const badgesKey = JSON.stringify(form.badges);
   useEffect(() => {
     if (!loaded) return;
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
@@ -244,7 +306,7 @@ function PerfilContent() {
       saveProfile();
     }, 1500);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
-  }, [form.name, form.bio, form.address, form.city, form.fair_location, paymentMethodsKey, loaded]);
+  }, [form.name, form.bio, form.address, form.city, form.fair_location, paymentMethodsKey, badgesKey, loaded]);
 
   async function saveProfile() {
     const token = getToken();
@@ -257,6 +319,7 @@ function PerfilContent() {
       city: form.city ?? "",
       bio: form.bio ?? "",
       payment_methods: form.payment_methods,
+      badges: form.badges,
       ...(form.photo_url ? { photo_url: form.photo_url } : {}),
       ...(form.cover_url ? { cover_url: form.cover_url } : {}),
       ...(form.address ? { address: form.address } : {}),
@@ -434,27 +497,29 @@ function PerfilContent() {
             placeholder="Rua / localidade — para retirada no sítio"
             required
           />
-          {geoHint?.city || geoHint?.state ? (
-            <div className="mt-2 flex items-center gap-2 text-sm">
-              <span className="rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
-                📍 {geoHint.city ?? "Cidade"}{geoHint.state ? `, ${geoHint.state}` : ""}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleUseMyLocation}
+              disabled={geoLoading}
+              className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs font-medium text-primary transition hover:bg-primary/10 disabled:opacity-50"
+            >
+              {geoLoading ? (
+                <span className="animate-spin">⏳</span>
+              ) : (
+                <span>📍</span>
+              )}
+              {geoLoading ? "Buscando..." : "Usar minha localização"}
+            </button>
+            {(geoHint?.city || geoHint?.state || form.city) && (
+              <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                {geoHint
+                  ? `${geoHint.city ?? "Cidade"}${geoHint.state ? `, ${geoHint.state}` : ""}`
+                  : form.city}
               </span>
-            </div>
-          ) : null}
-        </div>
-
-        {(form.city || geoHint?.city) && (
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-textPrimary">
-              Cidade / Estado
-            </label>
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-border/30 px-3 py-2.5">
-              <span className="text-base">📍</span>
-              <span className="flex-1 text-sm text-textPrimary">{form.city || `${geoHint?.city ?? ""}${geoHint?.state ? `, ${geoHint.state}` : ""}`}</span>
-              <span className="text-sm text-textSecondary">detectado via IA</span>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">
@@ -507,6 +572,37 @@ function PerfilContent() {
                   className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                     active
                       ? "border-primary bg-primary text-white"
+                      : "border-border bg-background text-textSecondary hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-textPrimary">
+            Selos e certificações
+          </label>
+          <p className="mb-2 text-xs text-textSecondary">Selecione o que descreve sua produção. Aparece na sua banca pública.</p>
+          <div className="flex flex-wrap gap-2">
+            {BADGE_OPTIONS.map((opt) => {
+              const active = form.badges.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setForm((prev) => ({
+                    ...prev,
+                    badges: active
+                      ? prev.badges.filter((b) => b !== opt.value)
+                      : [...prev.badges, opt.value],
+                  }))}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    active
+                      ? "border-primary bg-primary text-white shadow-sm"
                       : "border-border bg-background text-textSecondary hover:border-primary hover:text-primary"
                   }`}
                 >

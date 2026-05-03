@@ -218,7 +218,9 @@ Lista reservas recebidas pelo produtor logado.
 #### PUT /reservations/{id}/status
 Produtor atualiza status.
 
-**Body**: `{ "status": "confirmed" }` ou `{ "status": "collected" }`
+**Body**: `{ "status": "confirmed" }` ou `{ "status": "collected" }` ou `{ "status": "cancelled" }` ou `{ "status": "fiado" }`
+
+**Status válidos**: `pending`, `confirmed`, `collected`, `cancelled`, `fiado`
 
 #### PATCH /reservations/{id}/cancel
 Consumidor cancela reserva (somente `pending`).
@@ -247,11 +249,27 @@ Atualiza perfil.
 }
 ```
 
-#### POST /producer/upload
-Upload de foto de perfil (multipart/form-data).
+#### POST /producer/geocode
+Extrai cidade/estado de um endereço via OpenAI GPT-4o-mini.
 
-#### POST /producer/upload-cover
-Upload de foto de capa.
+**Body**:
+```json
+{ "address": "Rua XV de Novembro, 200, Auxiliadora, SC" }
+```
+
+**Resposta 200**:
+```json
+{ "city": "Auxiliadora", "state": "SC" }
+```
+
+> Prompt otimizado: ignora nomes de rua/bairro, só retorna cidade quando o município está explícito. Casos ambíguos retornam `null`.
+
+#### POST /producer/upload
+Upload de foto (multipart/form-data). Aceita JPG, PNG, WebP, GIF. Máximo 5MB.
+
+**Resposta 200**:
+```json
+{ "url": "https://terraviva.nyc3.digitaloceanspaces.com/terraviva/profiles/uuid.jpg" }
 
 ---
 

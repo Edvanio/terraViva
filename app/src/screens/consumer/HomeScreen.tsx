@@ -54,7 +54,7 @@ export function HomeScreen({ navigation }: any) {
         <TouchableOpacity
           style={[styles.cta, styles.ctaSecondary]}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate("MyProducts")}
+          onPress={() => navigation.navigate("Dashboard")}}
         >
           <Text style={styles.ctaIcon}>🌽</Text>
           <Text style={styles.ctaTextSecondary}>Quero vender</Text>

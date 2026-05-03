@@ -41,6 +41,7 @@ class UserProfileUpdate(BaseModel):
     address: Optional[str] = None
     fair_location: Optional[str] = None
     expo_push_token: Optional[str] = None
+    badges: Optional[list[str]] = None
 
 
 class UserProfileResponse(BaseModel):
@@ -57,6 +58,7 @@ class UserProfileResponse(BaseModel):
     pix_key: Optional[str] = None
     address: Optional[str] = None
     fair_location: Optional[str] = None
+    badges: list[str] = []
 
 
 class BancaResponse(BaseModel):
@@ -71,6 +73,7 @@ class BancaResponse(BaseModel):
     cover_url: Optional[str] = None
     categories: list[str] = []
     products_count: int = 0
+    badges: list[str] = []
 
 
 class ProductCreate(BaseModel):
@@ -165,6 +168,23 @@ class ReservationResponse(BaseModel):
     status: Literal["pending", "confirmed", "collected", "cancelled", "fiado"]
     created_at: datetime
     updated_at: datetime
+
+
+class ReviewCreate(BaseModel):
+    reservation_id: str
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = None
+
+
+class ReviewResponse(BaseModel):
+    id: str
+    consumer_id: str
+    producer_id: str
+    reservation_id: str
+    rating: int
+    comment: Optional[str] = None
+    consumer_name: Optional[str] = None
+    created_at: datetime
 
 
 class FairConfigCreate(BaseModel):

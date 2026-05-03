@@ -20,6 +20,7 @@ export interface Banca {
   bio: string;
   city: string;
   payment_methods: string[];
+  badges?: string[];
   photo_url?: string | null;
   cover_url?: string | null;
   categories?: string[];
@@ -69,4 +70,15 @@ export interface Reservation {
   status: "pending" | "confirmed" | "collected" | "cancelled";
   created_at: string;
   updated_at: string;
+}
+
+export interface Review {
+  id: string;
+  consumer_id: string;
+  producer_id: string;
+  reservation_id: string;
+  rating: number;
+  comment?: string | null;
+  consumer_name?: string | null;
+  created_at: string;
 }

@@ -7,6 +7,7 @@ import { Onboarding } from "@/components/Onboarding";
 export const metadata = {
   title: "Terra Viva — Do produtor pra você",
   description: "Compre direto de quem produz. Produtos coloniais frescos, entregues ou retirados no seu tempo.",
+  themeColor: "#2d6a4f",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Fundo redondo verde -->
+  <rect width="64" height="64" rx="14" fill="#2d6a4f"/>
+  <!-- Broto / mudinha estilizado -->
+  <!-- Caule -->
+  <line x1="32" y1="50" x2="32" y2="28" stroke="#b7e4c7" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Folha esquerda -->
+  <path d="M32 36 Q18 30 20 18 Q30 22 32 36Z" fill="#74c69d"/>
+  <!-- Folha direita -->
+  <path d="M32 30 Q46 24 44 12 Q34 16 32 30Z" fill="#52b788"/>
+  <!-- Terra / base -->
+  <ellipse cx="32" cy="50" rx="12" ry="4" fill="#1b4332"/>
+</svg>

@@ -22,6 +22,8 @@ Um ADR (Architecture Decision Record) é um documento que captura uma decisão a
 | [0008](0008-digitalocean-spaces-storage.md) | DigitalOcean Spaces para imagens | Infraestrutura | 2024-01 |
 | [0009](0009-monorepo-structure.md) | Monorepo com separação por pasta | Arquitetura | 2024-01 |
 | [0010](0010-dual-auth-storage.md) | Dual auth storage (cookie + localStorage) | Segurança | 2024-02 |
+| [0011](0011-ssr-publico-csr-privado.md) | SSR para público, CSR para privado | Arquitetura | 2024-02 |
+| [0012](0012-tailwind-sem-lib-ui.md) | Tailwind puro sem biblioteca de UI | Stack | 2024-01 |
 
 ## Categorias
 
@@ -29,6 +31,7 @@ Um ADR (Architecture Decision Record) é um documento que captura uma decisão a
 - ADR 0001: FastAPI + Python como backend
 - ADR 0003: Next.js 15 App Router
 - ADR 0007: OpenAI para cadastro inteligente
+- ADR 0012: Tailwind puro sem biblioteca de UI
 
 ### Dados e Persistência
 - ADR 0002: MongoDB como banco de dados
@@ -37,6 +40,7 @@ Um ADR (Architecture Decision Record) é um documento que captura uma decisão a
 ### Arquitetura
 - ADR 0006: Sem sistema de roles
 - ADR 0009: Monorepo com separação por pasta
+- ADR 0011: SSR para público, CSR para privado
 
 ### Segurança
 - ADR 0004: Autenticação por OTP via telefone
@@ -48,7 +52,7 @@ Um ADR (Architecture Decision Record) é um documento que captura uma decisão a
 ## Como Propor um Novo ADR
 
 1. Copie o [template.md](template.md)
-2. Numere sequencialmente (próximo: 0011)
+2. Numere sequencialmente (próximo: 0013)
 3. Preencha todas as seções
 4. Submeta para review
 

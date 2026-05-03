@@ -2,12 +2,15 @@
 
 ## Visão Geral
 
-O **Terra Viva** é uma plataforma digital comunitária que conecta produtores rurais a consumidores locais, funcionando como a "feira digital" de São Ludgero/SC. Consumidores navegam pelas bancas dos produtores, reservam produtos online e retiram na feira física presencial.
+O **Terra Viva** é uma plataforma digital comunitária que conecta produtores rurais entre si e com clientes em geral. Como cada produtor oferece produtos diferentes (queijos, verduras, pães, conservas, etc.), a plataforma funciona como uma "feira digital" onde **produtores também são clientes uns dos outros**, além de atender consumidores finais da região de São Ludgero/SC.
+
+Consumidores e produtores navegam pelas bancas, reservam produtos online e combinam retirada na feira física, no sítio do produtor ou via entrega.
 
 O diferencial principal é o **cadastro inteligente de produtos via IA**: o produtor fotografa o produto e a IA (GPT-4o Vision) preenche automaticamente nome, descrição, categoria, cores e preço sugerido.
 
 **Status**: Em produção estável na DigitalOcean.  
-**Modelo**: Comunitário, gratuito. Sem painel admin — produtores se autogerenciam. Pagamentos são combinados presencialmente ou via WhatsApp (não há gateway de pagamento).
+**Modelo**: Comunitário, gratuito. Sem painel admin — produtores se autogerenciam. Pagamentos são combinados presencialmente ou via WhatsApp (não há gateway de pagamento).  
+**Público**: Produtores rurais (que vendem E compram entre si) + consumidores locais.
 
 ## Estrutura do Monorepo
 

@@ -17,7 +17,7 @@ O público-alvo do Terra Viva são produtores rurais e consumidores de feiras or
 
 ## Decisão
 
-Autenticação sem senha via OTP (One-Time Password) de 6 dígitos enviado por telefone. JWT com validade de 7 dias. Em dev, código fixo `123456`.
+Autenticação sem senha via OTP (One-Time Password) de 6 dígitos enviado por telefone. JWT com validade de **360 dias** (`ACCESS_TOKEN_EXPIRE_MINUTES=518400`). Em dev, código fixo `123456`.
 
 ## Alternativas Consideradas
 
@@ -42,7 +42,7 @@ Autenticação sem senha via OTP (One-Time Password) de 6 dígitos enviado por t
 - Zero fricção — só precisa do número de WhatsApp
 - Não precisa memorizar nada
 - Criação automática de conta no primeiro login
-- 7 dias de sessão = raramente precisa re-autenticar
+- 360 dias de sessão = praticamente nunca precisa re-autenticar
 
 ### Negativas
 - Dependência futura de WhatsApp Business API (custo) para envio real
@@ -61,7 +61,7 @@ Priorizamos **acessibilidade e zero fricção** sobre **segurança robusta**. Ac
 - Collection `otp_codes` com índice TTL de 300s
 - `DEV_OTP_DEFAULT=123456` para ambiente de desenvolvimento
 - JWT payload: `{sub: user_id, phone, exp}`
-- Token expira em 10080 min (7 dias)
+- Token expira em 518400 min (360 dias) — trade-off consciente: público rural usa a plataforma esporadicamente (1x/semana), re-login frequente causaria abandono
 
 ## Revisão
 
