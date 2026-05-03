@@ -85,7 +85,7 @@ export function HomeActions() {
         ) : (
           <div className="space-y-2">
             {myOrders.slice(0, 3).map((order) => (
-              <article key={order.id} className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 shadow-card">
+              <Link key={order.id} href="/pedidos" className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 shadow-card hover:bg-background transition-colors active:scale-[0.99]">
                 {order.product_photo_url ? (
                   <Image src={order.product_photo_url} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-lg object-cover flex-shrink-0" />
                 ) : (
@@ -98,7 +98,7 @@ export function HomeActions() {
                   </p>
                 </div>
                 <Badge status={order.status} />
-              </article>
+              </Link>
             ))}
           </div>
         )}
@@ -122,7 +122,7 @@ export function HomeActions() {
         ) : (
           <div className="space-y-2">
             {requests.slice(0, 3).map((req) => (
-              <article key={req.id} className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 shadow-card">
+              <Link key={req.id} href="/minha-banca" className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3 shadow-card hover:bg-background transition-colors active:scale-[0.99]">
                 {req.product_photo_url ? (
                   <Image src={req.product_photo_url} alt="" width={36} height={36} unoptimized className="h-9 w-9 rounded-lg object-cover flex-shrink-0" />
                 ) : (
@@ -135,7 +135,7 @@ export function HomeActions() {
                   </p>
                 </div>
                 <Badge status={req.status} />
-              </article>
+              </Link>
             ))}
           </div>
         )}
