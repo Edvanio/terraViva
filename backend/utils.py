@@ -12,14 +12,41 @@ from config import get_settings
 
 
 PHONE_DIGITS_RE = re.compile(r"\D+")
+DEFAULT_DDD = "48"
 logger = logging.getLogger(__name__)
 
 
 def normalize_phone(phone: str) -> str:
-    normalized = PHONE_DIGITS_RE.sub("", phone)
-    if len(normalized) < 10:
-        raise ValueError("Telefone invalido")
-    return normalized
+    """
+    Normaliza telefone brasileiro para 11 dígitos puros: DD9XXXXXXXX.
+    - Remove tudo que não é dígito
+    - Remove código país (55) e zero inicial
+    - Se não tem DDD (8-9 dígitos), assume DDD 48
+    - Se tem 10 dígitos (DDD + 8), adiciona o 9
+    Resultado: sempre 11 dígitos (ex: 48991696588)
+    """
+    digits = PHONE_DIGITS_RE.sub("", phone)
+
+    # Remove código país 55
+    if digits.startswith("55") and len(digits) >= 12:
+        digits = digits[2:]
+
+    # Remove zero de discagem
+    if digits.startswith("0") and len(digits) >= 11:
+        digits = digits[1:]
+
+    # Sem DDD: assume DEFAULT_DDD
+    if len(digits) <= 9:
+        digits = DEFAULT_DDD + digits
+
+    # 10 dígitos (DD + 8 sem o 9): adiciona o 9 após DDD
+    if len(digits) == 10:
+        digits = digits[:2] + "9" + digits[2:]
+
+    if len(digits) != 11:
+        raise ValueError(f"Telefone invalido: esperado 11 digitos, recebeu {len(digits)}")
+
+    return digits
 
 
 def generate_otp() -> str:

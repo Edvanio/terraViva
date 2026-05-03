@@ -11,20 +11,55 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [phoneDisplay, setPhoneDisplay] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [step, setStep] = useState<"phone" | "confirm" | "otp">("phone");
   const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function requestOtp(e: FormEvent) {
+  /** Normaliza dígitos: remove 55, 0, assume DDD 48 se faltar, adiciona 9 */
+  function normalizeDigits(raw: string): string {
+    let digits = raw.replace(/\D/g, "");
+    if (digits.startsWith("55") && digits.length >= 12) digits = digits.slice(2);
+    if (digits.startsWith("0") && digits.length >= 11) digits = digits.slice(1);
+    if (digits.length <= 9) digits = "48" + digits;
+    if (digits.length === 10) digits = digits.slice(0, 2) + "9" + digits.slice(2);
+    return digits;
+  }
+
+  function handlePhoneSubmit(e: FormEvent) {
     e.preventDefault();
+    setError("");
+    const digits = rawPhone(phoneDisplay);
+    const normalized = normalizeDigits(digits);
+
+    if (normalized.length !== 11) {
+      setError("Número inválido. Digite com DDD (ex: 48 991696588).");
+      return;
+    }
+
+    // Se o usuário digitou sem DDD ou incompleto, mostra o ajustado e pede confirmação
+    if (digits.length < 11 || digits !== normalized) {
+      setPhoneDisplay(formatPhone(normalized));
+      setStep("confirm");
+      return;
+    }
+
+    sendOtp(normalized);
+  }
+
+  function handleConfirm() {
+    const normalized = normalizeDigits(rawPhone(phoneDisplay));
+    sendOtp(normalized);
+  }
+
+  async function sendOtp(phone: string) {
     setLoading(true);
     setError("");
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/request-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: rawPhone(phoneDisplay) }),
+      body: JSON.stringify({ phone }),
     });
 
     setLoading(false);
@@ -78,23 +113,25 @@ function LoginContent() {
         <div className="text-center">
           <span className="text-4xl">🌿</span>
           <h1 className="mt-2 text-2xl font-bold text-textPrimary">
-            {step === "phone" ? "Entrar no Terra Viva" : "Confirmar código"}
+            {step === "phone" ? "Entrar no Terra Viva" : step === "confirm" ? "Confirmar número" : "Confirmar código"}
           </h1>
           <p className="mt-1 text-sm text-textSecondary">
             {step === "phone"
               ? "Digite seu número de WhatsApp para receber o código"
+              : step === "confirm"
+              ? "Identificamos seu DDD automaticamente"
               : `Vamos confirmar o número ${phoneDisplay}`}
           </p>
         </div>
 
         {step === "phone" ? (
-          <form className="space-y-4" onSubmit={requestOtp}>
+          <form className="space-y-4" onSubmit={handlePhoneSubmit}>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-textPrimary">
                 Número de WhatsApp
               </label>
               <Input
-                placeholder="(48) 9 9999-9999"
+                placeholder="(48) 9 9169-6588"
                 value={phoneDisplay}
                 onChange={(e) => setPhoneDisplay(formatPhone(e.target.value))}
                 type="tel"
@@ -107,6 +144,24 @@ function LoginContent() {
               {loading ? "Enviando..." : "Receber código"}
             </Button>
           </form>
+        ) : step === "confirm" ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-primary-subtle px-4 py-4 text-center">
+              <p className="text-sm text-textSecondary">Seu número é este?</p>
+              <p className="mt-1 text-2xl font-bold tracking-wide text-primary">{phoneDisplay}</p>
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button size="lg" className="w-full" onClick={handleConfirm} disabled={loading}>
+              {loading ? "Enviando..." : "Sim, enviar código"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setStep("phone"); setError(""); }}
+              className="w-full text-sm text-textSecondary hover:text-primary"
+            >
+              ← Corrigir número
+            </button>
+          </div>
         ) : (
           <form className="space-y-4" onSubmit={verifyOtp}>
             {devCode && (
