@@ -85,11 +85,11 @@ export function ProductCard({ product, bancaId, hasFair }: { product: Product; b
         </div>
         <div className="mt-4">
           <span
-              className="flex w-full items-center justify-center rounded-xl py-3 text-base font-bold text-white transition-opacity group-hover:opacity-90"
-              style={ctaBg ?? { backgroundColor: "var(--color-primary)" }}
-            >
-              🛒 Quero esse!
-            </span>
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-base font-bold text-white transition-opacity group-hover:opacity-90${!cp ? " bg-primary" : ""}`}
+            style={ctaBg}
+          >
+            🛒 Reservar
+          </span>
         </div>
       </div>
     </Link>
