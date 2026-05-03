@@ -81,6 +81,7 @@ def get_profile(user: dict = Depends(get_current_user)):
 def update_profile(payload: UserProfileUpdate, user: dict = Depends(get_current_user)):
     db = get_db()
     data = {k: v for k, v in payload.model_dump().items() if v is not None}
+    data.pop("phone", None)  # phone é imutável (vem do login)
     if data:
         db.users.update_one({"_id": user["_id"]}, {"$set": data})
     updated = db.users.find_one({"_id": user["_id"]})
