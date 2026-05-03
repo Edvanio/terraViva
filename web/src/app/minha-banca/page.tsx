@@ -27,7 +27,7 @@ interface Order {
   consumer_phone?: string | null;
   quantity: number;
   total_price: number;
-  status: "pending" | "confirmed" | "collected" | "cancelled";
+  status: "pending" | "confirmed" | "collected" | "cancelled" | "fiado";
   pickup_location: string;
   payment_intent: string;
   updated_at: string;
@@ -75,7 +75,7 @@ const PAYMENT_LABEL: Record<string, string> = {
 export default function MinhaBancaPage() {
   const { ready } = useAuthGuard();
   const router = useRouter();
-  const [tab, setTab] = useState<"orders" | "products">("orders");
+  const [tab, setTab] = useState<"orders" | "products" | "fiados">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,7 +150,10 @@ export default function MinhaBancaPage() {
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
       setOrders(ordersData);
-      if (ordersData.length === 0) setTab("products");
+      const hasPending = ordersData.some((o: Order) => o.status === "pending" || o.status === "confirmed");
+      const hasFiados = ordersData.some((o: Order) => o.status === "fiado");
+      if (!hasPending && hasFiados) setTab("fiados");
+      else if (!hasPending && !hasFiados) setTab("products");
     }
     if (productsRes.ok) setProducts(await productsRes.json());
     setLoading(false);
@@ -165,7 +168,13 @@ export default function MinhaBancaPage() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
     });
-    toast(status === "confirmed" ? "Pedido confirmado! ✅" : status === "collected" ? "Marcado como retirado! 🎉" : "Pedido cancelado.");
+    const msgs: Record<string, string> = {
+      confirmed: "Pedido confirmado! ✅",
+      collected: "Pago e retirado! 🎉",
+      fiado: "Anotado no fiado! 📝",
+      cancelled: "Pedido cancelado.",
+    };
+    toast(msgs[status] || "Atualizado!");
     await loadData();
   }
 
@@ -313,10 +322,25 @@ export default function MinhaBancaPage() {
               : "text-textSecondary hover:text-textPrimary"
           }`}
         >
-          📦 Pedidos recebidos
+          📦 Pedidos
           {orders.filter((o) => o.status === "pending").length > 0 && (
             <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-xs text-white">
               {orders.filter((o) => o.status === "pending").length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab("fiados")}
+          className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
+            tab === "fiados"
+              ? "bg-surface text-amber-600 shadow-card"
+              : "text-textSecondary hover:text-textPrimary"
+          }`}
+        >
+          📝 Fiados
+          {orders.filter((o) => o.status === "fiado").length > 0 && (
+            <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-white">
+              {orders.filter((o) => o.status === "fiado").length}
             </span>
           )}
         </button>
@@ -328,7 +352,7 @@ export default function MinhaBancaPage() {
               : "text-textSecondary hover:text-textPrimary"
           }`}
         >
-          🧀 Meus produtos
+          🧀 Produtos
         </button>
       </div>
 
@@ -411,9 +435,26 @@ export default function MinhaBancaPage() {
                     </div>
                   )}
                   {order.status === "confirmed" && (
-                    <Button size="sm" className="w-full" onClick={() => updateOrderStatus(order.id, "collected")}>
-                      🧺 Marcar como retirado
-                    </Button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "collected")}
+                        className="flex-1 rounded-xl bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-700 transition-colors"
+                      >
+                        Pago
+                      </button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "fiado")}
+                        className="flex-1 rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors"
+                      >
+                        Fiado
+                      </button>
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "cancelled")}
+                        className="flex-1 rounded-xl bg-red-100 py-2.5 text-sm font-bold text-red-600 hover:bg-red-200 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   )}
 
                   {/* WhatsApp */}
@@ -461,6 +502,60 @@ export default function MinhaBancaPage() {
         </div>
       )}
 
+
+      {/* ── FIADOS ── */}
+      {tab === "fiados" && (
+        <div className="space-y-4">
+          {orders.filter((o) => o.status === "fiado").length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-16 text-center">
+              <span className="text-5xl">🎉</span>
+              <p className="font-medium text-textPrimary">Nenhum fiado pendente!</p>
+              <p className="text-sm text-textSecondary">Quando anotar um fiado, aparece aqui.</p>
+            </div>
+          ) : (
+            (() => {
+              const fiados = orders.filter((o) => o.status === "fiado");
+              const grouped: Record<string, Order[]> = {};
+              fiados.forEach((o) => {
+                const key = o.consumer_name || "Cliente";
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(o);
+              });
+              return Object.entries(grouped).map(([name, items]) => {
+                const total = items.reduce((s, o) => s + o.total_price, 0);
+                return (
+                  <div key={name} className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-base font-bold text-textPrimary">🧑‍🌾 {name}</h4>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700">
+                        R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-textPrimary truncate">{item.product_name}</p>
+                            <p className="text-xs text-textSecondary">
+                              {new Date(item.updated_at).toLocaleDateString("pt-BR")} · {item.quantity}x · R$ {item.total_price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => updateOrderStatus(item.id, "collected")}
+                            className="ml-3 flex-shrink-0 rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700 transition-colors"
+                          >
+                            💰 Recebi
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()
+          )}
+        </div>
+      )}
       {/* ── PRODUTOS ── */}
       {tab === "products" && (
         <div className="space-y-3">
