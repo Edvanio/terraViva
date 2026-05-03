@@ -46,6 +46,7 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
   const [price, setPrice] = useState("");
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -171,7 +172,7 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
         {phase === "picker" && (
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-textPrimary">Cadastro inteligente com IA</h3>
-            <p className="text-sm text-textSecondary">Comece escolhendo uma foto do produto.</p>
+            <p className="text-sm text-textSecondary">Tire uma foto do seu produto colonial ou escolha uma da galeria.</p>
             <input
               ref={inputRef}
               type="file"
@@ -183,10 +184,25 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
                 if (file) uploadAndGenerate(file);
               }}
             />
+            <input
+              ref={galleryRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadAndGenerate(file);
+              }}
+            />
             <Button onClick={() => inputRef.current?.click()} className="w-full" disabled={uploading}>
-              {uploading ? "Enviando foto..." : "Escolher ou tirar foto"}
+              {uploading ? "Enviando foto..." : "📷 Tirar foto do produto"}
             </Button>
-            <Button variant="secondary" onClick={onClose} className="w-full">Cancelar</Button>
+            <Button variant="secondary" onClick={() => galleryRef.current?.click()} className="w-full" disabled={uploading}>
+              🖼️ Escolher da galeria
+            </Button>
+            <button onClick={onClose} className="w-full rounded-xl border border-border py-3 text-sm font-medium text-textSecondary hover:bg-background transition-colors">
+              Cancelar
+            </button>
           </div>
         )}
 

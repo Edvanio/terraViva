@@ -269,6 +269,7 @@ function PerfilContent() {
         body: JSON.stringify(payload),
       });
 
+      if (res.status === 401) { clearSession(); return; }
       if (!res.ok) throw new Error();
       setIsNew(false);
       const redirect = searchParams.get("redirect");

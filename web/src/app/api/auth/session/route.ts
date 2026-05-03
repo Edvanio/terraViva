@@ -13,9 +13,9 @@ export async function POST(request: Request) {
   cookieStore.set(COOKIE_NAME, body.token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     path: "/",
-    maxAge: 60 * 60 * 24 * 360, // 360 dias
+    maxAge: 60 * 60 * 24 * 360, // 360 dias — igual ao JWT do backend
   });
   return NextResponse.json({ ok: true });
 }
