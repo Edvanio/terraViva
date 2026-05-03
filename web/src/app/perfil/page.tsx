@@ -239,6 +239,7 @@ function PerfilContent() {
   }
 
   // Auto-save com debounce
+  const paymentMethodsKey = JSON.stringify(form.payment_methods);
   useEffect(() => {
     if (!loaded) return;
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
@@ -246,7 +247,7 @@ function PerfilContent() {
       saveProfile();
     }, 1500);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
-  }, [form.name, form.bio, form.address, form.city, form.payment_methods, loaded]);
+  }, [form.name, form.bio, form.address, form.city, paymentMethodsKey, loaded]);
 
   async function saveProfile() {
     const token = getToken();
