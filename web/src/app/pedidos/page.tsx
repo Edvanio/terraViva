@@ -150,7 +150,9 @@ export default function PedidosPage() {
                     const msg = [
                       `Olá! 👋`,
                       ``,
-                      `Sou cliente do *Terra Viva* e fiz um pedido pelo app:`,
+                      order.consumer_name
+                        ? `Sou *${order.consumer_name}*, cliente do *Terra Viva*, e fiz um pedido pelo app:`
+                        : `Sou cliente do *Terra Viva* e fiz um pedido pelo app:`,
                       ``,
                       `🛒 *${order.product_name}*`,
                       `📦 Quantidade: ${order.quantity}x`,
