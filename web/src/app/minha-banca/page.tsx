@@ -39,6 +39,7 @@ interface Product {
   description?: string;
   photo_url?: string;
   category?: string;
+  unit?: string | null;
   color_primary?: string | null;
   color_accent?: string | null;
   is_active: boolean;
@@ -91,6 +92,7 @@ export default function MinhaBancaPage() {
   const [newPrice, setNewPrice] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [newUnit, setNewUnit] = useState("unidade");
   const [newPhoto, setNewPhoto] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -217,13 +219,14 @@ export default function MinhaBancaPage() {
         price: parsePrice(newPrice),
         description: newDesc || undefined,
         category: newCategory || undefined,
+        unit: newUnit || "unidade",
         photo_url: newPhoto || undefined,
         is_active: true,
       }),
     });
     setSaving(false);
     if (res.ok) {
-      setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory("");
+      setNewName(""); setNewPrice(""); setNewDesc(""); setNewPhoto(""); setNewCategory(""); setNewUnit("unidade");
       setShowForm(false);
       toast("Produto adicionado! ✅");
       await loadData();
@@ -505,6 +508,30 @@ export default function MinhaBancaPage() {
 
               {/* Foto do produto */}
               <div>
+                <p className="mb-2 text-sm font-medium text-textSecondary">Unidade</p>
+                <select
+                  value={newUnit}
+                  onChange={(e) => setNewUnit(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="unidade">Unidade</option>
+                  <option value="kg">Kg</option>
+                  <option value="g">Gramas</option>
+                  <option value="litro">Litro</option>
+                  <option value="ml">ml</option>
+                  <option value="duzia">Dúzia</option>
+                  <option value="pe">Pé</option>
+                  <option value="bandeja">Bandeja</option>
+                  <option value="pote">Pote</option>
+                  <option value="fatia">Fatia</option>
+                  <option value="pacote">Pacote</option>
+                  <option value="saco">Saco</option>
+                  <option value="maco">Maço</option>
+                </select>
+              </div>
+
+              {/* Foto do produto */}
+              <div>
                 {newPhoto ? (
                   <div className="relative">
                     <Image
@@ -566,7 +593,7 @@ export default function MinhaBancaPage() {
                         <p className="truncate text-sm text-textSecondary">{product.description}</p>
                       )}
                       <p className="text-lg font-bold text-primary">
-                        R$ {product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        R$ {product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}{product.unit && <span className="text-sm font-semibold text-textSecondary">/{product.unit}</span>}
                       </p>
                       {product.category && (
                         <span className="text-sm text-textSecondary">

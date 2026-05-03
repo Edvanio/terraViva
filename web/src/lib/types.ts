@@ -6,6 +6,7 @@ export interface Product {
   description?: string | null;
   photo_url?: string | null;
   category?: string | null;
+  unit?: string | null;
   color_primary?: string | null;
   color_accent?: string | null;
   is_active: boolean;

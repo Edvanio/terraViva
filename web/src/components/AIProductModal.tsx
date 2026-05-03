@@ -14,6 +14,7 @@ interface AIResult {
   name?: string | null;
   description?: string | null;
   category?: string | null;
+  unit?: string | null;
   color_primary?: string | null;
   color_accent?: string | null;
   suggested_price?: number | null;
@@ -43,6 +44,7 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [unit, setUnit] = useState("");
   const [price, setPrice] = useState("");
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +62,7 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
     setName("");
     setDescription("");
     setCategory("");
+    setUnit("");
     setPrice("");
   }, [open]);
 
@@ -118,6 +121,7 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
       setName(data.name || "");
       setDescription(data.description || "");
       setCategory(data.category || "outros");
+      setUnit(data.unit || "unidade");
       setPrice(data.suggested_price ? String(data.suggested_price.toFixed(2).replace(".", ",")) : "");
       setSelectedPhoto(data.enhanced_photo_url ? "enhanced" : "original");
       setPhase("editor");
@@ -137,6 +141,7 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
         name,
         description: description || undefined,
         category: category || "outros",
+        unit: unit || "unidade",
         price: parsePrice(price),
         photo_url: effectivePhoto || result.original_photo_url,
         color_primary: useColors ? result.color_primary || undefined : undefined,
@@ -255,6 +260,26 @@ export function AIProductModal({ open, token, city, onClose, onPublished, onFall
               {CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
               ))}
+            </select>
+
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+            >
+              <option value="unidade">Unidade</option>
+              <option value="kg">Kg</option>
+              <option value="g">Gramas</option>
+              <option value="litro">Litro</option>
+              <option value="ml">ml</option>
+              <option value="duzia">Dúzia</option>
+              <option value="pe">Pé</option>
+              <option value="bandeja">Bandeja</option>
+              <option value="pote">Pote</option>
+              <option value="fatia">Fatia</option>
+              <option value="pacote">Pacote</option>
+              <option value="saco">Saco</option>
+              <option value="maco">Maço</option>
             </select>
 
             <label className="flex items-center gap-2 text-sm text-textPrimary">
