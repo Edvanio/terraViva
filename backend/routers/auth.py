@@ -58,7 +58,7 @@ def verify_otp(payload: OtpVerify):
         )
         user = db.users.find_one({"_id": result.inserted_id})
 
-    token = create_access_token(str(user["_id"]), user["role"])
+    token = create_access_token(str(user["_id"]), user["role"], phone=user["phone"])
     return TokenResponse(access_token=token)
 
 

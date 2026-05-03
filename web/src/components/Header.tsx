@@ -8,11 +8,17 @@ export async function Header() {
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-sm">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 21V11" stroke="white" strokeWidth="1.9" strokeLinecap="round"/>
-              <path d="M12 15C12 15 7.5 13.5 7 9C7 9 12 9.5 12 15Z" fill="white" fillOpacity="0.9"/>
-              <path d="M12 11.5C12 11.5 16.5 9.5 17 5.5C17 5.5 12 6.5 12 11.5Z" fill="white" fillOpacity="0.75"/>
-              <path d="M8 21Q12 19.5 16 21" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeOpacity="0.5"/>
-              <circle cx="7.5" cy="6.5" r="1.6" fill="white" fillOpacity="0.6"/>
+              {/* Pétalas */}
+              <ellipse cx="12" cy="5.5" rx="1.5" ry="2.8" fill="white" fillOpacity="0.85"/>
+              <ellipse cx="12" cy="5.5" rx="1.5" ry="2.8" fill="white" fillOpacity="0.85" transform="rotate(45 12 12)"/>
+              <ellipse cx="12" cy="5.5" rx="1.5" ry="2.8" fill="white" fillOpacity="0.85" transform="rotate(90 12 12)"/>
+              <ellipse cx="12" cy="5.5" rx="1.5" ry="2.8" fill="white" fillOpacity="0.85" transform="rotate(135 12 12)"/>
+              {/* Centro */}
+              <circle cx="12" cy="12" r="3.5" fill="white"/>
+              <circle cx="12" cy="12" r="2" fill="white" fillOpacity="0.5"/>
+              {/* Caule */}
+              <path d="M12 15.5V21" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M12 18.5C12 18.5 9.5 17.5 9 15.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" fillOpacity="0.7"/>
             </svg>
           </div>
           <div className="leading-tight">

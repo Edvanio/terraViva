@@ -14,6 +14,8 @@ def list_bancas():
     result = []
     for item in bancas:
         products = list(db.products.find({"producer_id": item["_id"], "is_active": True}))
+        if not products:
+            continue  # só aparece quem tem produto ativo
         categories = list({p.get("category") for p in products if p.get("category")})
         result.append(BancaResponse(
             id=str(item["_id"]),
