@@ -53,7 +53,7 @@ class ProductCreate(BaseModel):
     color_primary: Optional[str] = None
     color_accent: Optional[str] = None
     is_active: bool = True
-    stock: Optional[int] = None
+    stock: int = 1
 
 
 class ProductUpdate(BaseModel):

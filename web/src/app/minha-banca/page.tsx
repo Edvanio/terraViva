@@ -229,6 +229,8 @@ export default function MinhaBancaPage() {
     setShowAiModal(true);
   }
 
+  if (!ready) return null;
+
   if (loading) {
     return (
       <div className="space-y-4">

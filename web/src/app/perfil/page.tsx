@@ -82,13 +82,14 @@ export default function PerfilPage() {
           return;
         }
         const data = await res.json();
+        const tokenPhone = getPhoneFromToken(token);
         setForm({
           city: data.city ?? "",
           bio: data.bio ?? "",
           address: data.address ?? "",
           pix_key: data.pix_key ?? "",
           payment_methods: data.payment_methods ?? ["cash"],
-          phone: formatPhone(data.phone ?? ""),
+          phone: formatPhone(data.phone || tokenPhone),
           photo_url: data.photo_url ?? null,
           cover_url: data.cover_url ?? null,
         });
@@ -234,6 +235,8 @@ export default function PerfilPage() {
       setSaving(false);
     }
   }
+
+  if (!ready) return null;
 
   if (loading) {
     return (
@@ -400,13 +403,11 @@ export default function PerfilPage() {
           <label className="mb-1.5 block text-sm font-medium text-textPrimary">
             Telefone / WhatsApp
           </label>
-          <Input
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
-            placeholder="(48) 9 9999-9999"
-            type="tel"
-            inputMode="numeric"
-          />
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-border/30 px-3 py-2.5">
+            <span className="text-base">🔒</span>
+            <span className="flex-1 text-sm text-textPrimary">{form.phone}</span>
+            <span className="text-xs text-textSecondary">número de login</span>
+          </div>
         </div>
 
         <div>
