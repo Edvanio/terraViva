@@ -1,0 +1,327 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { BancaStoryCard } from "./BancaStoryCard";
+
+export interface ShareProduct {
+  name: string;
+  price: number;
+  photoUrl?: string | null;
+}
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  name: string;
+  shortCode: string;
+  city?: string | null;
+  bio?: string | null;
+  photoUrl?: string | null;
+  coverUrl?: string | null;
+  colorPrimary?: string | null;
+  products?: ShareProduct[];
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+
+/**
+ * Converte URL para dataURL via proxy backend (resolve CORS com DO Spaces).
+ */
+async function toDataUrl(url: string): Promise<string | null> {
+  try {
+    const proxyUrl = `${API_BASE}/producer/image-proxy?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Aguarda todas as <img> dentro de um elemento terminarem de carregar/decodificar.
+ */
+async function waitForImages(el: HTMLElement): Promise<void> {
+  const imgs = Array.from(el.querySelectorAll("img")) as HTMLImageElement[];
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        img.complete && img.naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            })
+    )
+  );
+}
+
+export function ShareBancaModal({
+  isOpen,
+  onClose,
+  name,
+  shortCode,
+  city,
+  bio,
+  photoUrl,
+  coverUrl,
+  colorPrimary,
+  products = [],
+}: Props) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [generating, setGenerating] = useState(false);
+  const [desktopDownloaded, setDesktopDownloaded] = useState(false);
+
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
+  const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
+  const [productDataUrls, setProductDataUrls] = useState<(string | null)[]>([]);
+  const [captureReady, setCaptureReady] = useState(false);
+
+  const bancaUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/banca/${shortCode}`
+      : `https://terra-viva-3n3ko.ondigitalocean.app/banca/${shortCode}`;
+
+  const whatsappText = `Ola! Confira os produtos da nossa banca na feira Terra Viva!\n${bancaUrl}`;
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setGenerating(false);
+      setDesktopDownloaded(false);
+      setAvatarDataUrl(null);
+      setCoverDataUrl(null);
+      setProductDataUrls([]);
+      setCaptureReady(false);
+    }
+  }, [isOpen]);
+
+  async function handleGenerateStory() {
+    if (generating) return;
+    setGenerating(true);
+    setDesktopDownloaded(false);
+
+    try {
+      const [avatar, cover, ...prods] = await Promise.all([
+        photoUrl ? toDataUrl(photoUrl) : Promise.resolve(null),
+        coverUrl ? toDataUrl(coverUrl) : Promise.resolve(null),
+        ...products.slice(0, 6).map((p) =>
+          p.photoUrl ? toDataUrl(p.photoUrl) : Promise.resolve(null)
+        ),
+      ]);
+
+      setAvatarDataUrl(avatar);
+      setCoverDataUrl(cover);
+      setProductDataUrls(prods);
+      setCaptureReady(true);
+    } catch {
+      setGenerating(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!captureReady || !cardRef.current) return;
+
+    // Aguarda React commitar o re-render com as dataURLs
+    const timer = setTimeout(async () => {
+      if (!cardRef.current) return;
+      try {
+        // Aguarda todas as imagens decodificarem antes de capturar
+        await waitForImages(cardRef.current);
+
+        const { toPng } = await import("html-to-image");
+        const dataUrl = await toPng(cardRef.current, {
+          width: 540,
+          height: 960,
+          pixelRatio: 2,
+          cacheBust: false,
+        });
+
+        const fetchRes = await fetch(dataUrl);
+        const blob = await fetchRes.blob();
+        const safeName = name.toLowerCase().replace(/\s+/g, "-");
+        const file = new File([blob], `${safeName}-terra-viva.png`, { type: "image/png" });
+
+        if (
+          typeof navigator !== "undefined" &&
+          navigator.canShare &&
+          navigator.canShare({ files: [file] })
+        ) {
+          await navigator.share({
+            files: [file],
+            title: `${name} - Terra Viva`,
+            text: `Conheca a banca de ${name} na feira Terra Viva!`,
+          });
+          onClose();
+        } else {
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = `${safeName}-terra-viva.png`;
+          link.click();
+          setDesktopDownloaded(true);
+        }
+      } catch (err) {
+        console.warn("Share failed:", err);
+      } finally {
+        setGenerating(false);
+        setCaptureReady(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captureReady]);
+
+  if (!isOpen) return null;
+
+  const mosaicPhotos: (string | null)[] = [coverDataUrl, ...productDataUrls];
+  const displayProducts = products.slice(0, 5).map((p, i) => ({
+    name: p.name,
+    price: p.price,
+    photoDataUrl: productDataUrls[i] ?? null,
+  }));
+
+  const modal = (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ alignItems: "center" }}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Dialog centralizado */}
+      <div
+        className="relative w-full max-w-sm rounded-3xl bg-white shadow-2xl"
+        style={{ maxHeight: "90dvh", display: "flex", flexDirection: "column" }}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 flex-shrink-0 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-textPrimary">Divulgar minha banca</h3>
+          <p className="mt-1 text-sm text-textSecondary">
+            Compartilhe e leve mais clientes a sua banca
+          </p>
+          {/* Fechar */}
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Conteudo */}
+        <div className="overflow-y-auto px-6 pb-6 flex-1">
+          <div className="space-y-3">
+            {/* WhatsApp */}
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="flex items-center gap-4 rounded-2xl border border-green-100 bg-green-50 px-4 py-4 transition hover:bg-green-100 active:scale-95"
+            >
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#25d366] shadow-sm">
+                <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-textPrimary">WhatsApp</p>
+                <p className="text-xs text-textSecondary">Enviar link da banca com texto</p>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-textSecondary" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </a>
+
+            {/* Cartaz para Story */}
+            <button
+              onClick={handleGenerateStory}
+              disabled={generating}
+              className="flex w-full items-center gap-4 rounded-2xl border border-purple-100 bg-purple-50 px-4 py-4 text-left transition hover:bg-purple-100 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+            >
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] shadow-sm">
+                {generating ? (
+                  <svg className="h-5 w-5 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-textPrimary">
+                  {generating ? "Gerando cartaz..." : "Cartaz para Story"}
+                </p>
+                <p className="text-xs text-textSecondary truncate">
+                  {generating ? "Baixando fotos e gerando imagem..." : "Instagram, Facebook, TikTok e mais"}
+                </p>
+              </div>
+              {!generating && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-textSecondary" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+
+            {desktopDownloaded && (
+              <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
+                <strong>Cartaz baixado!</strong> Abra o Instagram no celular,
+                va em <strong>Adicionar Story</strong> e escolha a imagem salva.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/*
+        Card off-screen para captura pelo html-to-image.
+        IMPORTANTE: position absolute (nao fixed), sem z-index negativo
+        para garantir que o browser renderize (pinte) as imagens.
+      */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
+          width: "540px",
+          height: "960px",
+          overflow: "hidden",
+          pointerEvents: "none",
+        }}
+      >
+        <BancaStoryCard
+          ref={cardRef}
+          name={name}
+          city={city}
+          bio={bio}
+          photoDataUrl={avatarDataUrl}
+          colorPrimary={colorPrimary}
+          products={displayProducts}
+          mosaicPhotos={mosaicPhotos}
+          bancaUrl={bancaUrl}
+        />
+      </div>
+    </div>
+  );
+
+  return createPortal(modal, document.body);
+}
