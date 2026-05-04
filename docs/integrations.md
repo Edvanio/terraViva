@@ -2,194 +2,147 @@
 
 ## Serviços Externos
 
-### OpenAI API
-**Tipo**: API REST (SDK Python)  
-**Propósito**: Geração inteligente de produtos a partir de fotos  
-**Modelos usados**:
-- `gpt-4o` — Vision (análise de imagem → metadata do produto)
-- `dall-e-2` — Geração de imagem de fundo estilizada
+### OpenAI (GPT-4o + DALL-E)
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | REST API |
+| **Propósito** | Cadastro inteligente de produtos (Vision), geocoding por fallback |
+| **Modelos** | `gpt-4o` (vision), `gpt-image-1` (geração), `gpt-4o-mini` (geocoding) |
+| **Dependência** | Opcional — fallback para cadastro manual se indisponível |
+| **Timeout** | 90 segundos |
+| **Dados enviados** | Imagem do produto (base64), prompt com contexto da feira |
+| **Dados recebidos** | JSON: name, description, category, suggested_price, colors[] |
+| **Implementação** | `backend/services/openai_service.py` |
 
-**Dados enviados**: URL da foto do produto, cidade do produtor  
-**Dados recebidos**: Nome, descrição, categoria, preço sugerido, cores, imagem gerada  
-**Dependência**: Opcional (funcionalidade de IA desativada graciosamente sem API key)  
-**Tratamento de falhas**:
-- Timeout de 90 segundos (`asyncio.wait_for`)
-- Retorna HTTP 503 se indisponível
-- Fallback: produtor cadastra produto manualmente
-
-**Configuração**: `OPENAI_API_KEY` env var
-
----
-
-### DigitalOcean Spaces (S3-Compatible)
-**Tipo**: Object Storage API (SDK boto3)  
-**Propósito**: Armazenamento de imagens (fotos de perfil, capas, produtos)  
-**Protocolo**: S3 API via `boto3`
-
-**Dados enviados**: Imagens processadas (resize/compress via Pillow)  
-**Dados recebidos**: URL pública da imagem  
-**Dependência**: Crítica (sem Spaces, upload de fotos não funciona)  
-**Tratamento de falhas**: Exceção propagada ao frontend ("Erro ao enviar foto")
-
-**Configuração**:
-- `DO_SPACES_KEY` — Access key
-- `DO_SPACES_SECRET` — Secret key
-- `DO_SPACES_ENDPOINT` — `https://nyc3.digitaloceanspaces.com`
-- `DO_SPACES_BUCKET` — `dadosbimdoctor`
-- `DO_SPACES_FOLDER` — `terraviva/profiles`
-- `DO_SPACES_PRODUCTS_FOLDER` — `terraviva/products`
-
----
+### DigitalOcean Spaces (S3)
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | S3-compatible API (boto3) |
+| **Propósito** | Armazenamento de imagens (perfil, capa, produtos) |
+| **Bucket** | `dadosbimdoctor` |
+| **Pastas** | `terraviva/profiles/`, `terraviva/products/` |
+| **Dependência** | Crítica — sem storage, upload de fotos falha |
+| **Acesso** | URLs públicas (CDN DO Spaces) |
+| **Implementação** | `backend/routers/producers.py`, `backend/routers/products.py` |
 
 ### MongoDB Atlas (DigitalOcean Managed)
-**Tipo**: Database as a Service  
-**Propósito**: Persistência principal (usuários, produtos, reservas, configs)  
-**Protocolo**: MongoDB Wire Protocol via `pymongo` (sync)
-
-**Cluster**: `db-mongodb-bimdoctor-ce100a5c.mongo.ondigitalocean.com`  
-**Database**: `terra_viva`  
-**Dependência**: Crítica  
-**Tratamento de falhas**: Conexão falha = app não inicia (fail fast)
-
-**Configuração**: `MONGODB_URL` env var (connection string SRV com TLS)
-
----
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | Database driver (PyMongo) |
+| **Propósito** | Persistência de todos os dados |
+| **Connection** | SRV URI com TLS |
+| **Dependência** | Crítica |
+| **Coleções** | users, products, reservations, reviews, otp_codes, notifications, fair_config |
+| **Implementação** | `backend/database.py` (singleton) |
 
 ### Expo Push Notifications
-**Tipo**: HTTP API  
-**Propósito**: Enviar notificações push ao produtor quando recebe novo pedido  
-**Protocolo**: POST para `https://exp.host/--/api/v2/push/send`
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | HTTP API |
+| **Propósito** | Push notifications para app mobile |
+| **Endpoint** | `https://exp.host/--/api/v2/push/send` |
+| **Dependência** | Opcional — apenas para usuários mobile com token registrado |
+| **Dados enviados** | `{ to: expo_push_token, title, body }` |
+| **Tratamento de falha** | Fire-and-forget (daemon thread) |
+| **Implementação** | `backend/utils.py` → `send_push_notification()` |
 
-**Dados enviados**: `expo_push_token` do produtor, título, body  
-**Dependência**: Opcional (falha silenciosa)  
-**Tratamento de falhas**: Fire-and-forget em thread daemon, não bloqueia response  
+### z-api (WhatsApp)
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | REST API |
+| **Propósito** | Notificações transacionais via WhatsApp |
+| **Endpoint** | `https://api.z-api.io/instances/{id}/token/{token}/send-text` |
+| **Dependência** | Opcional — apenas se produtor/consumidor tiver telefone cadastrado |
+| **Autenticação** | Instance ID + Token + Client-Token (header) |
+| **Dados enviados** | `{ phone: "55XXXXXXXXXXX", message: "texto formatado" }` |
+| **Tratamento de falha** | Fire-and-forget (daemon thread) |
+| **Implementação** | `backend/utils.py` → `send_whatsapp()` |
 
-**Configuração**: Token do dispositivo salvo em `users.expo_push_token`
+### Nominatim / OpenStreetMap
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | HTTP API (free tier) |
+| **Propósito** | Reverse geocoding — coordenadas → cidade/endereço |
+| **Dependência** | Opcional — fallback para GPT-4o-mini se indisponível |
+| **Rate limit** | 1 req/s (OSM policy) |
+| **Implementação** | `backend/routers/producers.py` |
 
----
+## Comunicação Intra-Container
 
-## Integrações Internas (Intra-Container)
+### nginx ↔ FastAPI
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | HTTP reverse proxy |
+| **Rota** | `/api/*` → `http://backend:8000` (strip prefix) |
+| **Headers** | X-Real-IP, X-Forwarded-For, X-Forwarded-Proto |
+| **Upload** | `/uploads/*` → FastAPI (cache 1 dia) |
 
-### nginx → FastAPI
-**Tipo**: Proxy reverso  
-**Rota**: `/api/*` → `http://127.0.0.1:8000/`  
-**Detalhes**: Strip `/api` prefix, forward headers (`X-Real-IP`, `X-Forwarded-For`)
-
-### nginx → Next.js
-**Tipo**: Proxy reverso  
-**Rotas**:
-- `/*` → `http://127.0.0.1:3000` (páginas e assets)
-- `/api/auth/session` → `http://127.0.0.1:3000` (API route Next.js)
+### nginx ↔ Next.js
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | HTTP reverse proxy |
+| **Rota** | `/*` → `http://web:3000` |
+| **WebSocket** | Upgrade headers para HMR em dev |
 
 ### Next.js SSR → FastAPI
-**Tipo**: HTTP fetch interno  
-**URL**: `http://127.0.0.1:8000` (env `API_INTERNAL_URL`)  
-**Propósito**: Server Components buscam dados diretamente do backend sem passar por nginx  
-**Configuração**: `API_INTERNAL_URL` passada explicitamente no `entrypoint.sh`
-
-### Next.js Client → FastAPI
-**Tipo**: HTTP fetch via browser  
-**URL**: `/api/*` (relativo, passa por nginx)  
-**Propósito**: Client Components fazem requests autenticadas via browser  
-**Configuração**: `NEXT_PUBLIC_API_URL=/api` (build-time)
-
-### Nominatim / OpenStreetMap (Client-side)
-**Tipo**: HTTP fetch no browser (client-side)  
-**URL**: `https://nominatim.openstreetmap.org/reverse`  
-**Propósito**: Reverse geocode das coordenadas GPS do usuário para detectar cidade/UF  
-**Custo**: Gratuito (sem API key)  
-**Limitações**: Rate limit de 1 req/segundo; requer `User-Agent` identificador  
-**Tratamento de Falhas**: Toast de erro; fallback para digitação manual
-
----
-
-## Dependências Externas Futuras (Não Implementadas)
-
-| Serviço | Propósito | Status |
-|---------|-----------|--------|
-| Twilio/Vonage | Envio real de SMS para OTP | Planejado |
-| Gateway de Pagamento | Pix automático | Planejado |
-| WhatsApp Business API | Notificações via WhatsApp | Avaliando |
-
----
+| Aspecto | Detalhe |
+|---------|---------|
+| **Tipo** | HTTP interno (server-to-server) |
+| **URL** | `http://backend:8000` (via `API_INTERNAL_URL`) |
+| **Uso** | Server Components fazem fetch direto ao backend sem passar pelo nginx |
+| **Auth** | Cookie `terra_viva_token` forwarded |
 
 ## Diagrama de Integrações
 
 ```
-                    ┌─────────────────┐
-                    │   Consumidor    │
-                    │  (Browser/App)  │
-                    └────────┬────────┘
+                    ┌────────────────────┐
+                    │   OpenAI API       │
+                    │  (Vision + Image)  │
+                    └────────┬───────────┘
                              │ HTTPS
                              ▼
-                    ┌─────────────────┐
-                    │  nginx (:80)    │
-                    │  (DO Container) │
-                    └──┬──────────┬───┘
-                       │          │
-              /api/*   │          │  /*
-                       ▼          ▼
-              ┌─────────┐  ┌──────────┐
-              │ FastAPI  │  │ Next.js  │
-              │ (:8000)  │  │ (:3000)  │
-              └──┬───┬───┘  └──────────┘
-                 │   │           │
-                 │   │    SSR fetch (127.0.0.1:8000)
-                 │   │           │
-    ┌────────────┘   └───────────┼──────────┐
-    │                            │          │
-    ▼                            ▼          ▼
-┌────────┐              ┌──────────┐  ┌──────────┐
-│MongoDB │              │ OpenAI   │  │DO Spaces │
-│ Atlas  │              │ (GPT-4o) │  │  (S3)    │
-└────────┘              └──────────┘  └──────────┘
-    │
-    │ (push token)
-    ▼
-┌────────────┐
-│ Expo Push  │
-│ API        │
-└────────────┘
-
-    Browser (client-side)
-        │
-        ▼
-┌──────────────┐
-│  Nominatim   │
-│ OpenStreetMap│
-│(reverse geo) │
-└──────────────┘
+┌──────────┐    HTTP    ┌──────────────┐    PyMongo    ┌──────────────┐
+│  z-api   │◄───────────│   FastAPI    │──────────────►│   MongoDB    │
+│(WhatsApp)│            │   Backend    │               │   Atlas      │
+└──────────┘            └──────┬───────┘               └──────────────┘
+                               │
+                    ┌──────────┼──────────┐
+                    │          │          │
+                    ▼          ▼          ▼
+            ┌──────────┐ ┌──────────┐ ┌──────────┐
+            │ DO Spaces│ │Expo Push │ │Nominatim │
+            │  (S3)    │ │   API    │ │  (OSM)   │
+            └──────────┘ └──────────┘ └──────────┘
 ```
 
 ## Contratos de Integração
 
-### OpenAI Vision Request
-O prompt enviado ao GPT-4o inclui instruções para retornar JSON com:
-- `name` (string) — nome do produto
-- `description` (string) — descrição comercial
-- `category` (enum) — uma das 12 categorias fixas
-- `suggested_price` (float) — preço em R$ baseado na região
-- `color_primary` (hex) — cor dominante do produto
-- `color_accent` (hex) — cor de destaque
-
-### OpenAI Geocode (GPT-4o-mini)
-Prompt otimizado para extrair município de endereços brasileiros:
-- Ignora nomes de rua/bairro como possíveis cidades
-- Retorna `null` em casos ambíguos
-- Request: `POST /producer/geocode { address: "..." }`
-
-### Nominatim Reverse Geocode (Client-side)
+### WhatsApp (z-api) — Formato de mensagem
 ```
-GET https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&accept-language=pt-BR
-User-Agent: TerraViva/1.0
+🌱 *Terra Viva — [Título do evento]* [Emoji]
+━━━━━━━━━━━━━━━━━━━━
+[Detalhes do pedido com emojis]
+━━━━━━━━━━━━━━━━━━━━
+👆 [Call to action]:
+https://terra-viva-3n3ko.ondigitalocean.app/[rota]
 ```
-Resposta processada: extrai `address.city/town/village/municipality` + `ISO3166-2-lvl4` para UF.
 
-### Expo Push Notification
+### Push Notification (Expo)
 ```json
 {
-  "to": "ExponentPushToken[xxx]",
-  "title": "Novo pedido!",
-  "body": "Queijo Colonial (x2) - feira"
+  "to": "ExponentPushToken[...]",
+  "title": "📦 Novo pedido!",
+  "body": "João pediu Alface (x2) — Na feira"
 }
 ```
+
+## Resiliência
+
+| Integração | Estratégia |
+|-----------|-----------|
+| OpenAI | Timeout 90s → fallback manual |
+| z-api | Fire-and-forget (sem retry) |
+| Expo Push | Fire-and-forget (sem retry) |
+| Nominatim | Fallback → GPT-4o-mini geocoding |
+| MongoDB | Conexão persistente (pool); startup falha se indisponível |
+| DO Spaces | Erro 500 propagado ao cliente |

@@ -1,9 +1,12 @@
 import uuid
 import json
+from urllib.parse import urlparse
 
 import boto3
+import httpx
 from botocore.exceptions import ClientError
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response as HTTPResponse
 from openai import AsyncOpenAI
 
 from config import get_settings
@@ -15,6 +18,12 @@ from utils import generate_short_code
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_SIZE_MB = 5
+
+# Domínios permitidos no proxy de imagens (segurança anti-SSRF)
+_PROXY_ALLOWED_HOSTS = {
+    "dadosbimdoctor.nyc3.digitaloceanspaces.com",
+    "dadosbimdoctor.nyc3.cdn.digitaloceanspaces.com",
+}
 
 router = APIRouter()
 
@@ -48,6 +57,36 @@ def _upload_to_spaces(content: bytes, filename: str, content_type: str) -> str:
 
     endpoint_host = settings.do_spaces_endpoint.replace("https://", "")
     return f"https://{settings.do_spaces_bucket}.{endpoint_host}/{key}"
+
+
+@router.get("/image-proxy")
+async def image_proxy(url: str = Query(...)):
+    """
+    Proxy para imagens do DO Spaces.
+    Resolve CORS para captura de imagens no frontend (html-to-image).
+    Só aceita URLs dos domínios autorizados (anti-SSRF).
+    """
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="URL inválida")
+
+    if parsed.netloc not in _PROXY_ALLOWED_HOSTS:
+        raise HTTPException(status_code=400, detail="Domínio não permitido")
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail="Imagem indisponível")
+        content_type = resp.headers.get("content-type", "image/jpeg")
+        return HTTPResponse(
+            content=resp.content,
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao buscar imagem: {e}")
 
 
 def _to_response(user: dict) -> UserProfileResponse:

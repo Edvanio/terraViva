@@ -81,6 +81,10 @@ export default function MinhaBancaPage() {
   const [loading, setLoading] = useState(true);
   const [producerCity, setProducerCity] = useState<string>("");
   const [producerName, setProducerName] = useState<string>("");
+  const [producerPhotoUrl, setProducerPhotoUrl] = useState<string | null>(null);
+  const [producerCoverUrl, setProducerCoverUrl] = useState<string | null>(null);
+  const [producerBio, setProducerBio] = useState<string | null>(null);
+  const [producerColorPrimary, setProducerColorPrimary] = useState<string | null>(null);
   const [bancaShortCode, setBancaShortCode] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
@@ -141,6 +145,10 @@ export default function MinhaBancaPage() {
       }
       setProducerCity(profile.city || "");
       setProducerName(profile.name || "");
+      setProducerPhotoUrl(profile.photo_url ?? null);
+      setProducerCoverUrl(profile.cover_url ?? null);
+      setProducerBio(profile.bio ?? null);
+      setProducerColorPrimary(profile.color_primary ?? null);
       setBancaShortCode(profile.short_code ?? null);
     } else {
       router.replace(`/perfil?redirect=${encodeURIComponent("/minha-banca")}`);
@@ -304,7 +312,21 @@ export default function MinhaBancaPage() {
         </div>
         <div className="flex items-center gap-2">
           {bancaShortCode && products.some((p) => p.is_active) && (
-            <ShareButton name={producerName} shortCode={bancaShortCode} />
+            <ShareButton
+              name={producerName}
+              shortCode={bancaShortCode}
+              storyData={{
+                city: producerCity,
+                bio: producerBio,
+                photoUrl: producerPhotoUrl,
+                coverUrl: producerCoverUrl,
+                colorPrimary: producerColorPrimary,
+                products: products
+                  .filter((p) => p.is_active)
+                  .slice(0, 6)
+                  .map((p) => ({ name: p.name, price: p.price, photoUrl: p.photo_url })),
+              }}
+            />
           )}
           <Link href="/perfil">
             <Button variant="secondary" size="sm">✏️ Editar perfil</Button>

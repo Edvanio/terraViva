@@ -3,322 +3,314 @@
 ## Visão Geral
 
 - **Base URL (produção)**: `https://terra-viva-3n3ko.ondigitalocean.app/api`
-- **Base URL (dev)**: `http://localhost/api`
+- **Base URL (local)**: `http://localhost/api`
 - **Formato**: JSON
-- **Autenticação**: Bearer JWT no header `Authorization`
+- **Autenticação**: Bearer JWT (header `Authorization: Bearer <token>`)
+- **Versionamento**: Sem versão no path (v1 implícito)
 
 ## Autenticação
 
-Endpoints públicos não requerem token. Endpoints protegidos requerem:
-```
-Authorization: Bearer <jwt_token>
-```
-
-O JWT contém `sub` (user_id), `phone`, `exp`.
-
----
-
-## Endpoints
-
-### Auth
-
-#### POST /auth/request-otp
-Solicita envio de código OTP ao telefone.
+### POST /auth/request-otp
+Solicita envio de OTP para o telefone.
 
 **Body**:
 ```json
-{ "phone": "48999001234" }
+{ "phone": "48999887766" }
 ```
-
-**Resposta 200**:
+**Response 200**:
 ```json
-{ "message": "OTP enviado", "dev_code": "123456" }
+{ "message": "OTP enviado" }
 ```
-> `dev_code` só retorna em ambiente de desenvolvimento.
 
 ---
 
-#### POST /auth/verify-otp
-Valida OTP e retorna JWT.
+### POST /auth/verify-otp
+Valida OTP e retorna JWT. Cria usuário se não existir.
 
 **Body**:
 ```json
-{ "phone": "48999001234", "code": "123456" }
+{ "phone": "48999887766", "code": "123456" }
 ```
-
-**Resposta 200**:
+**Response 200**:
 ```json
-{ "access_token": "eyJ...", "token_type": "bearer" }
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "user": {
+    "id": "665a...",
+    "phone": "48999887766",
+    "name": null,
+    "short_code": "A1B2C"
+  }
+}
 ```
-
-**Erros**: 401 (código inválido/expirado)
+**Erro 401**: OTP inválido ou expirado.
 
 ---
 
-### Bancas (Público)
+## Bancas (Público)
 
-#### GET /bancas
-Lista produtores com pelo menos um produto ativo.
+### GET /bancas
+Lista produtores com produtos ativos.
 
-**Resposta 200**:
+**Query params**:
+- `category` (opcional): filtrar por categoria
+
+**Response 200**:
 ```json
 [
   {
     "id": "665a...",
-    "short_code": "lyaqk",
-    "name": "Maria Silva",
-    "bio": "Produtos orgânicos da roça",
+    "name": "Sítio Boa Vista",
     "city": "São Ludgero",
-    "phone": "48999001234",
-    "payment_methods": ["cash", "pix"],
     "photo_url": "https://...",
     "cover_url": "https://...",
-    "categories": ["queijos", "hortifruti"],
-    "products_count": 5
+    "short_code": "A1B2C",
+    "categories": ["hortaliças", "frutas"],
+    "products_count": 12,
+    "rating_avg": 4.5,
+    "rating_count": 8
   }
 ]
 ```
 
 ---
 
-#### GET /bancas/{id_or_short_code}
-Detalhe de uma banca com seus produtos ativos.
+### GET /bancas/{user_id}
+Detalhe da banca com todos os produtos.
 
-**Parâmetros**: `id_or_short_code` — ObjectId MongoDB ou short_code de 5 caracteres.
-
-**Resposta 200**:
+**Response 200**:
 ```json
 {
   "id": "665a...",
-  "short_code": "lyaqk",
-  "name": "Maria Silva",
-  "bio": "...",
+  "name": "Sítio Boa Vista",
+  "bio": "Produção orgânica familiar",
   "city": "São Ludgero",
-  "phone": "48999001234",
-  "payment_methods": ["cash", "pix"],
   "photo_url": "...",
   "cover_url": "...",
-  "gallery": [],
-  "address": "Rua...",
+  "color_primary": "#2d6a4f",
   "pix_key": "48999...",
+  "payment_methods": ["pix", "cash"],
   "products": [
     {
-      "id": "...",
-      "user_id": "...",
-      "name": "Queijo Colonial",
-      "price": 25.0,
-      "description": "...",
-      "photo_url": "...",
-      "category": "queijos",
-      "is_active": true
+      "id": "665b...",
+      "name": "Alface Crespa",
+      "description": "Orgânica, colhida hoje",
+      "price": 4.50,
+      "stock": null,
+      "category": "hortaliças",
+      "image_url": "...",
+      "active": true
     }
-  ]
+  ],
+  "reviews": [...]
 }
 ```
 
-**Erros**: 404 (banca não encontrada)
-
 ---
 
-### Produtos (Autenticado)
+## Produtos (Autenticado — Produtor)
 
-#### GET /products/mine
-Lista produtos do produtor logado.
+### GET /products
+Lista produtos do produtor autenticado.
 
-#### POST /products
-Cria novo produto.
+### POST /products
+Cria produto.
 
 **Body**:
 ```json
 {
   "name": "Queijo Colonial",
-  "price": 25.0,
-  "description": "Queijo artesanal envelhecido 30 dias",
-  "category": "queijos",
-  "photo_url": "https://...",
+  "description": "Maturado 30 dias",
+  "price": 25.00,
   "stock": 10,
-  "is_active": true
+  "category": "laticínios",
+  "image_url": "https://..."
 }
 ```
 
-#### PUT /products/{id}
-Atualiza produto existente (mesmo body parcial).
+### PATCH /products/{id}
+Atualiza produto (parcial).
 
-#### DELETE /products/{id}
+### DELETE /products/{id}
 Remove produto.
 
-#### PATCH /products/{id}/toggle
-Alterna `is_active` (disponível/esgotado).
+---
 
-#### PATCH /products/{id}/stock
-Atualiza estoque.
+### POST /products/ai-analyze
+Analisa imagem via IA e retorna sugestões.
 
-**Body**: `{ "stock": 5 }` ou `{ "stock": null }`
+**Body** (multipart/form-data):
+- `image`: arquivo de imagem
+
+**Response 200**:
+```json
+{
+  "name": "Geleia de Morango",
+  "description": "Geleia artesanal de morango com pedaços da fruta",
+  "category": "conservas",
+  "suggested_price": 18.00,
+  "colors": ["#c62828", "#ff5722"]
+}
+```
 
 ---
 
-### Produtos IA (Autenticado)
+## Reservas (Autenticado)
 
-#### POST /products/ai-generate
-Gera sugestão de produto a partir de foto via GPT-4o Vision.
+### GET /reservations
+Lista reservas do usuário (como consumidor ou produtor).
+
+**Query params**:
+- `role`: `consumer` | `producer`
+- `status` (opcional): filtrar por status
+
+### POST /reservations
+Cria nova reserva.
 
 **Body**:
 ```json
 {
-  "photo_url": "https://spaces.../foto.jpg",
-  "city": "São Ludgero"
-}
-```
-
-**Resposta 200**:
-```json
-{
-  "name": "Queijo tipo Emmental",
-  "description": "Queijo suíço artesanal com furos...",
-  "category": "queijos",
-  "suggested_price": 45.0,
-  "color_primary": "#F5DEB3",
-  "color_accent": "#8B4513",
-  "enhanced_photo_url": "https://..."
-}
-```
-
-**Erros**: 503 (IA indisponível ou timeout 90s), 422 (URL inválida)
-
----
-
-### Reservas (Autenticado)
-
-#### POST /reservations
-Cria reserva.
-
-**Body**:
-```json
-{
-  "product_id": "665a...",
+  "product_id": "665b...",
   "quantity": 2,
   "pickup_location": "feira",
   "payment_intent": "pix"
 }
 ```
-
-`pickup_location`: `"feira"` | `"produtor"` | `"entrega"`  
-`payment_intent`: `"cash"` | `"pix"` | `"card"`
-
-**Resposta 200**: Objeto `ReservationResponse` completo.
-
----
-
-#### GET /reservations
-Lista reservas do consumidor logado.
-
-#### GET /reservations/producer
-Lista reservas recebidas pelo produtor logado.
-
-#### PUT /reservations/{id}/status
-Produtor atualiza status.
-
-**Body**: `{ "status": "confirmed" }` ou `{ "status": "collected" }` ou `{ "status": "cancelled" }` ou `{ "status": "fiado" }`
-
-**Status válidos**: `pending`, `confirmed`, `collected`, `cancelled`, `fiado`
-
-#### PATCH /reservations/{id}/cancel
-Consumidor cancela reserva (somente `pending`).
-
-**Erros**: 400 (não é pending), 404 (não encontrada ou não é dono)
+**Response 201**:
+```json
+{
+  "id": "665c...",
+  "product_id": "665b...",
+  "product_name": "Alface Crespa",
+  "consumer_id": "665a...",
+  "producer_id": "665d...",
+  "quantity": 2,
+  "unit_price": 4.50,
+  "total_price": 9.00,
+  "pickup_location": "feira",
+  "payment_intent": "pix",
+  "status": "pending",
+  "created_at": "2026-05-03T10:30:00Z"
+}
+```
 
 ---
 
-### Perfil do Produtor (Autenticado)
+### PATCH /reservations/{id}/status
+Atualiza status da reserva (produtor).
 
-#### GET /producer/profile
-Retorna perfil do produtor logado.
+**Body**:
+```json
+{ "status": "confirmed" }
+```
+**Status válidos**: `confirmed`, `collected`, `cancelled`, `fiado`
 
-#### PUT /producer/profile
+---
+
+### DELETE /reservations/{id}
+Cancela reserva (consumidor — apenas se `pending`).
+
+---
+
+## Notificações (Autenticado)
+
+### GET /notifications
+Lista notificações do usuário.
+
+**Response 200**:
+```json
+[
+  {
+    "id": "665e...",
+    "type": "new_order",
+    "title": "📦 Novo pedido!",
+    "body": "João pediu Alface (x2)",
+    "read": false,
+    "created_at": "2026-05-03T10:30:00Z"
+  }
+]
+```
+
+### PATCH /notifications/read-all
+Marca todas como lidas.
+
+---
+
+## Reviews (Autenticado)
+
+### POST /reviews
+Cria avaliação para pedido coletado.
+
+**Body**:
+```json
+{
+  "reservation_id": "665c...",
+  "rating": 5,
+  "comment": "Produtos sempre frescos!"
+}
+```
+
+### GET /reviews/{producer_id}
+Lista reviews públicas de um produtor.
+
+---
+
+## Produtor — Perfil (Autenticado)
+
+### GET /producer/profile
+Retorna perfil do produtor autenticado.
+
+### PATCH /producer/profile
 Atualiza perfil.
 
 **Body**:
 ```json
 {
-  "name": "Maria Silva",
-  "bio": "Produtos da roça",
+  "name": "Sítio Boa Vista",
+  "bio": "Agricultura familiar desde 1990",
   "city": "São Ludgero",
-  "payment_methods": ["cash", "pix"],
-  "pix_key": "48999001234",
-  "address": "Rua das Flores, 123"
+  "color_primary": "#2d6a4f",
+  "pix_key": "48999887766",
+  "payment_methods": ["pix", "cash"]
 }
 ```
 
-#### POST /producer/geocode
-Extrai cidade/estado de um endereço via OpenAI GPT-4o-mini.
+### POST /producer/photo
+Upload de foto de perfil (multipart/form-data).
 
-**Body**:
-```json
-{ "address": "Rua XV de Novembro, 200, Auxiliadora, SC" }
-```
-
-**Resposta 200**:
-```json
-{ "city": "Auxiliadora", "state": "SC" }
-```
-
-> Prompt otimizado: ignora nomes de rua/bairro, só retorna cidade quando o município está explícito. Casos ambíguos retornam `null`.
-
-#### POST /producer/upload
-Upload de foto (multipart/form-data). Aceita JPG, PNG, WebP, GIF. Máximo 5MB.
-
-**Resposta 200**:
-```json
-{ "url": "https://terraviva.nyc3.digitaloceanspaces.com/terraviva/profiles/uuid.jpg" }
+### POST /producer/cover
+Upload de foto de capa (multipart/form-data).
 
 ---
 
-### Configuração da Feira
+## Feira — Configuração
 
-#### GET /fair-config?city=São+Ludgero
-Retorna configuração ativa da feira para a cidade.
+### GET /fair-config
+Retorna configuração atual da feira.
 
-**Resposta 200**:
-```json
-{
-  "id": "...",
-  "name": "Feira Livre São Ludgero",
-  "city": "São Ludgero",
-  "fair_day": "sabado",
-  "fair_start_time": "07:00",
-  "fair_end_time": "12:00",
-  "fair_location": "Praça Central",
-  "order_window_open": "quarta 08:00",
-  "order_window_close": "sexta 18:00",
-  "active": true
-}
-```
+### PUT /fair-config
+Atualiza configuração (admin).
 
 ---
 
-### Health Check
+## Health Check
 
-#### GET /health
+### GET /health
+**Response 200**:
 ```json
-{ "status": "ok", "timestamp": "2026-05-03T12:00:00Z" }
+{ "status": "ok", "timestamp": "2026-05-03T10:30:00Z" }
 ```
 
 ---
 
 ## Códigos de Erro Comuns
 
-| Status | Significado |
+| Código | Significado |
 |--------|------------|
-| 400 | Validação falhou (ex: cancelar pedido não-pending) |
-| 401 | Token ausente, expirado ou inválido |
+| 400 | Dados inválidos (validação Pydantic) |
+| 401 | Token ausente, inválido ou expirado |
+| 403 | Sem permissão (ex: cancelar pedido de outro usuário) |
 | 404 | Recurso não encontrado |
-| 422 | Dados inválidos (Pydantic validation) |
-| 503 | Serviço externo indisponível (OpenAI) |
-
-## Rate Limiting
-
-Não implementado. A DO App Platform aplica proteção básica contra DDoS.
-
-## Versionamento
-
-API não versionada (v1 implícito). Mudanças são backward-compatible.
+| 409 | Conflito (ex: review duplicada) |
+| 500 | Erro interno do servidor |

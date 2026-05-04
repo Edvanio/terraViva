@@ -5,132 +5,114 @@
 | Linguagem | Versão | Uso |
 |-----------|--------|-----|
 | Python | 3.11 | Backend API |
-| TypeScript | 5.6 | Web + App + Shared |
-| JavaScript (Node.js) | 20 LTS | Runtime do Next.js em produção |
+| TypeScript | 5.6 | Web + Mobile + Shared types |
+| JavaScript (Node.js) | 18 LTS | Runtime Next.js em produção |
 
 ## Frameworks Principais
 
-| Framework | Versão | Papel |
-|-----------|--------|-------|
+| Framework | Versão | Componente |
+|-----------|--------|------------|
 | FastAPI | 0.115.6 | Backend REST API |
-| Next.js | 15.0.3 | Web frontend (SSR + CSR) |
-| React | 18.3.1 | UI (web e mobile) |
+| Next.js | 15.0.3 (App Router) | Frontend web (SSR + CSR) |
+| React | 18.3.1 | UI web |
 | React Native | 0.76.1 | App mobile |
-| Expo | 52 | Toolchain mobile |
+| Expo | 52.0.11 | Build e distribuição mobile |
 | Tailwind CSS | 3.4.16 | Estilização web |
+
+## Bibliotecas Chave
+
+### Backend (Python)
+| Biblioteca | Propósito |
+|-----------|-----------|
+| PyMongo 4.10.1 | Driver MongoDB (sem ORM) |
+| Pydantic + pydantic-settings | Validação, serialização, config |
+| python-jose | Geração/validação JWT |
+| boto3 | Upload para DigitalOcean Spaces (S3) |
+| openai | API GPT-4o Vision + geração de imagem |
+| httpx | Cliente HTTP (push notifications, z-api) |
+| Pillow | Processamento de imagens (resize) |
+
+### Web (TypeScript)
+| Biblioteca | Propósito |
+|-----------|-----------|
+| SWR 2.2.5 | Data fetching com cache client-side |
+| js-cookie | Gestão de cookies (auth) |
+| react-hot-toast | Feedback visual (toasts) |
+| lucide-react | Ícones |
+
+### Mobile (TypeScript)
+| Biblioteca | Propósito |
+|-----------|-----------|
+| @react-navigation | Navegação (stack + tabs) |
+| expo-secure-store | Armazenamento seguro do JWT |
+| @react-native-async-storage | Cache local |
+| expo-notifications | Push notifications |
+| expo-camera | Captura de foto para IA |
 
 ## Banco de Dados
 
-- **MongoDB Atlas** (DigitalOcean Managed Database)
-  - Cluster: `db-mongodb-bimdoctor-ce100a5c.mongo.ondigitalocean.com`
-  - Database: `terra_viva`
-  - Driver: `pymongo 4.10.1` (sync)
-  - Sem ORM — acesso direto via driver
-  - Indexes: `users.phone` (unique), `users.short_code` (unique, sparse), `otp_codes.created_at` (TTL 5min)
-
-### Collections Principais
-
-| Collection | Propósito |
-|------------|-----------|
-| `users` | Produtores e consumidores (mesmo schema) |
-| `products` | Catálogo de produtos dos produtores |
-| `reservations` | Pedidos/reservas de consumidores |
-| `otp_codes` | Códigos OTP temporários (TTL 5min) |
-| `fair_configs` | Configuração da feira (horários, local) |
-
-## Storage de Imagens
-
-- **DigitalOcean Spaces** (S3-compatible)
-  - Endpoint: `https://nyc3.digitaloceanspaces.com`
-  - Bucket: `dadosbimdoctor`
-  - Pastas: `terraviva/profiles/`, `terraviva/products/`
-  - SDK: `boto3 1.35.86`
-
-## Inteligência Artificial
-
-- **OpenAI GPT-4o** — Vision (análise de foto do produto → nome, descrição, categoria, preço)
-- **OpenAI DALL-E 2** — Geração de imagem de fundo do produto (quando necessário)
-- SDK: `openai >= 1.30.0`
-
-## Autenticação
-
-- **OTP via SMS** (placeholder — em dev usa código fixo)
-- **JWT** (python-jose) — token com validade de 360 dias
-- **Cookie httpOnly** — sessão do Next.js server-side
-- **localStorage** — token para client components
+- **MongoDB** (DigitalOcean Managed Database)
+- **Abordagem**: Schema-flexible, sem ORM — queries diretas via PyMongo
+- **Índices**: TTL para OTP (5min), unique em phone/short_code, sparse em reviews
+- **Coleções principais**: `users`, `products`, `reservations`, `reviews`, `otp_codes`, `notifications`, `fair_config`
 
 ## Infraestrutura
 
 | Componente | Tecnologia |
-|------------|-----------|
+|-----------|-----------|
+| Containers | Docker + Docker Compose |
+| Proxy reverso | nginx 1.25 |
 | Hosting | DigitalOcean App Platform |
-| Container | Docker multi-stage (Python 3.11-slim base) |
-| Proxy reverso | nginx |
-| Process manager | `entrypoint.sh` (bash com trap) |
-| CI/CD | GitHub → DO auto-deploy (branch `main`) |
+| Storage (arquivos) | DigitalOcean Spaces (S3-compatível) |
+| CI/CD | Auto-deploy via push no branch `main` |
+| DNS/TLS | Gerenciado pelo DO App Platform |
 
-## Dependências Backend (Python)
+## Ferramentas de Desenvolvimento
 
-| Pacote | Propósito |
-|--------|-----------|
-| `fastapi` | Framework web |
-| `uvicorn` | ASGI server |
-| `pymongo` | Driver MongoDB |
-| `python-jose` | JWT encode/decode |
-| `pydantic-settings` | Configuração via env vars |
-| `boto3` | Upload S3/Spaces |
-| `openai` | API de IA |
-| `Pillow` | Processamento de imagem |
-| `httpx` | HTTP client async |
+| Ferramenta | Propósito |
+|-----------|-----------|
+| Docker Compose | Orquestração local (backend + web + nginx) |
+| Makefile | Shortcuts para comandos comuns |
+| ESLint + Prettier | Linting/formatação web |
+| supervisord | Gerenciamento de processos no container |
 
-## Dependências Web (Node.js)
-
-| Pacote | Propósito |
-|--------|-----------|
-| `next` | Framework SSR/SSG |
-| `react` / `react-dom` | UI library |
-| `swr` | Data fetching client-side |
-| `tailwindcss` | Utility-first CSS |
-
-## Dependências Mobile (Expo/RN)
-
-| Pacote | Propósito |
-|--------|-----------|
-| `expo` | Toolchain e build |
-| `@react-navigation/*` | Navegação (tabs + stack) |
-| `axios` | HTTP client |
-| `expo-image-picker` | Captura de fotos |
-| `expo-notifications` | Push notifications |
-| `expo-secure-store` | Armazenamento seguro de token |
-| `@react-native-async-storage` | Cache offline |
-
-## Arquitetura de Deploy (Container Único)
+## Arquitetura Geral
 
 ```
-┌─────────────────────────────────────────┐
-│  DigitalOcean App Platform (1 container)│
-│                                         │
-│  nginx (:80)                            │
-│    ├─ /api/*         → uvicorn :8000    │
-│    ├─ /api/auth/*    → node :3000       │
-│    └─ /*             → node :3000       │
-│                                         │
-│  uvicorn (:8000)     FastAPI (2 workers)│
-│  node (:3000)        Next.js standalone │
-└─────────────────────────────────────────┘
-         │                    │
-         ▼                    ▼
-  MongoDB Atlas       DO Spaces (S3)
+┌─────────────┐     ┌─────────────┐     ┌──────────────┐
+│  App Mobile │     │  Browser    │     │  WhatsApp    │
+│  (Expo)     │     │  (Next.js)  │     │  (z-api)     │
+└──────┬──────┘     └──────┬──────┘     └──────┬───────┘
+       │                   │                    │
+       │  HTTPS            │  nginx :80         │  Webhook
+       ▼                   ▼                    ▼
+┌──────────────────────────────────────────────────────┐
+│                    nginx (reverse proxy)              │
+│  /api/* → FastAPI :8000  |  /* → Next.js :3000       │
+└──────────────────────────────────────────────────────┘
+       │                          │
+       ▼                          ▼
+┌──────────────┐          ┌──────────────┐
+│   FastAPI    │◄─────────│   Next.js    │
+│   (backend)  │  SSR     │   (web SSR)  │
+└──────┬───────┘          └──────────────┘
+       │
+       ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  MongoDB     │     │  DO Spaces   │     │  OpenAI API  │
+│  (Atlas)     │     │  (S3)        │     │  (GPT-4o)    │
+└──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-## Decisões Arquiteturais
+## Decisões Arquiteturais Importantes
 
 | Decisão | Justificativa |
 |---------|---------------|
-| Container único | DO App Platform cobra por container; unificar reduz custo |
-| MongoDB sem ORM | Flexibilidade, schema evolutivo sem migrations |
-| Next.js standalone | Menor footprint para produção em container |
-| JWT longo (360 dias) | Público-alvo rural sem costume de re-login frequente |
-| OTP por SMS (sem senha) | Simplicidade máxima para público pouco técnico |
-| SSR + force-dynamic | SEO para bancas públicas, dados sempre frescos |
-| Tailwind sem component lib | Design system customizado "orgânico" |
+| FastAPI sobre Express/NestJS | Type-safety nativa, schema validation com Pydantic, alta performance async |
+| MongoDB sobre PostgreSQL | Documentos flexíveis — produto pode ter campos variáveis; sem necessidade de migrations |
+| Monorepo único | Deploy unificado, tipos compartilhados, menor overhead de coordenação |
+| Container Docker unificado | Reduz custo no DO App Platform (billing por container) |
+| JWT com 360 dias de expiração | Usuários rurais acessam esporadicamente (dia da feira); elimina fricção de re-login |
+| Sem sistema de roles | Mesmo usuário pode ser produtor e consumidor simultaneamente — simplifica UX |
+| OTP por SMS (sem senha) | Público-alvo com baixa afinidade digital; login por código no WhatsApp/SMS |
+| OpenAI Vision para cadastro | Produtor fotografa produto → IA gera nome, descrição, preço e categoria |
