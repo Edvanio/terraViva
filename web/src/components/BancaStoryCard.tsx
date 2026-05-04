@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { forwardRef } from "react";
 
@@ -12,12 +12,11 @@ export interface BancaStoryCardProps {
   name: string;
   city?: string | null;
   bio?: string | null;
-  /** Foto de perfil do produtor (cÃ­rculo central) */
   photoDataUrl?: string | null;
   colorPrimary?: string | null;
   products: StoryProduct[];
   bancaUrl: string;
-  /** Todas as fotos disponÃ­veis para o mosaico: [cover, ...productPhotos] */
+  /** Fotos para o mosaico: [cover, ...fotosDosProdutos] */
   mosaicPhotos: (string | null)[];
 }
 
@@ -25,7 +24,6 @@ const W = 540;
 const H = 960;
 const MOSAIC_H = 500;
 
-/** Mosaico dinÃ¢mico baseado na quantidade de fotos disponÃ­veis */
 function PhotoMosaic({ photos, width, height }: { photos: string[]; width: number; height: number }) {
   const n = Math.min(photos.length, 6);
 
@@ -37,17 +35,17 @@ function PhotoMosaic({ photos, width, height }: { photos: string[]; width: numbe
   if (n === 0) {
     return (
       <div style={{
-        width, height,
+        width,
+        height,
         background: "linear-gradient(155deg, #0d2e1c 0%, #1e5c3a 40%, #0b2217 100%)",
         position: "relative",
       }}>
-        {/* Textura sutil */}
         <div style={{
-          position: "absolute", inset: 0,
+          position: "absolute",
+          inset: 0,
           backgroundImage: [
-            "radial-gradient(circle at 15% 25%, rgba(74,222,128,0.07) 0%, transparent 45%)",
-            "radial-gradient(circle at 85% 75%, rgba(74,222,128,0.05) 0%, transparent 40%)",
-            "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 60%)",
+            "radial-gradient(circle at 20% 30%, rgba(74,222,128,0.08) 0%, transparent 45%)",
+            "radial-gradient(circle at 80% 70%, rgba(74,222,128,0.06) 0%, transparent 40%)",
           ].join(","),
         }} />
       </div>
@@ -90,7 +88,7 @@ function PhotoMosaic({ photos, width, height }: { photos: string[]; width: numbe
     </div>
   );
 
-  // 6 fotos: 3Ã—2
+  // 6 fotos: grade 3x2
   return (
     <div style={{ width, height, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gridTemplateRows: "1fr 1fr", gap: 3 }}>
       {photos.slice(0, 6).map((s, i) => img(s, { width: "100%", height: "100%" }, i))}
@@ -99,20 +97,20 @@ function PhotoMosaic({ photos, width, height }: { photos: string[]; width: numbe
 }
 
 /**
- * Cartaz Story premium 540Ã—960 (pixel ratio 2 â†’ exportado 1080Ã—1920).
- * Renderizado off-screen; capturado por html-to-image.
+ * Cartaz Story 540x960 (pixelRatio 2 => 1080x1920 exportado).
+ * Renderizado off-screen e capturado por html-to-image.
+ * Usa apenas inline styles (sem Tailwind) para garantir fidelidade na captura.
+ * Sem emojis nos textos — usa formas CSS para evitar problemas de fonte no html-to-image.
  */
 export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
   ({ name, city, bio, photoDataUrl, colorPrimary, products, bancaUrl, mosaicPhotos }, ref) => {
     const accent = colorPrimary || "#2d6a4f";
     const initial = name.charAt(0).toUpperCase();
     const validMosaic = mosaicPhotos.filter(Boolean) as string[];
-
-    // CÃ­rculos de produto (apenas fotos, sem texto nem preÃ§o)
     const productCircles = products.filter((p) => p.photoDataUrl).slice(0, 5);
 
     const CIRCLE = 110;
-    const HALF_CIRCLE = CIRCLE / 2; // 55px
+    const HALF_CIRCLE = CIRCLE / 2;
 
     return (
       <div
@@ -127,30 +125,37 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
           boxSizing: "border-box",
         }}
       >
-        {/* â•â• MOSAICO DE FOTOS (topo) â•â• */}
+        {/* MOSAICO DE FOTOS — topo */}
         <div style={{ position: "absolute", top: 0, left: 0, width: W, height: MOSAIC_H, overflow: "hidden" }}>
           <PhotoMosaic photos={validMosaic} width={W} height={MOSAIC_H} />
-
-          {/* Gradiente superior â€” legibilidade do logo */}
+          {/* Gradiente superior — para o logo ficar legivel */}
           <div style={{
             position: "absolute", top: 0, left: 0, right: 0, height: 120,
             background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)",
           }} />
-
-          {/* Gradiente inferior â€” transiÃ§Ã£o para o dark */}
+          {/* Gradiente inferior — transicao suave para o fundo dark */}
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0, height: 200,
-            background: "linear-gradient(to bottom, transparent 0%, rgba(11,34,23,0.8) 60%, #0b2217 100%)",
+            background: "linear-gradient(to bottom, transparent 0%, rgba(11,34,23,0.85) 60%, #0b2217 100%)",
           }} />
         </div>
 
-        {/* â•â• LOGO TERRA VIVA (topo esquerdo) â•â• */}
+        {/* LOGO TERRA VIVA — canto superior esquerdo */}
         <div style={{
-          position: "absolute", top: 30, left: 30, zIndex: 20,
+          position: "absolute", top: 28, left: 28, zIndex: 20,
           display: "flex", alignItems: "center", gap: 9,
         }}>
-          <span style={{ fontSize: 24, lineHeight: 1 }}>ðŸŒ±</span>
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+          <div style={{
+            width: 30, height: 30,
+            borderRadius: "50%",
+            background: accent,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+          }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#fff", opacity: 0.85 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
             <span style={{
               color: "#fff",
               fontSize: 15,
@@ -158,36 +163,40 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               textShadow: "0 1px 6px rgba(0,0,0,0.6)",
-            }}>Terra Viva</span>
+            }}>
+              Terra Viva
+            </span>
             <span style={{
-              color: "rgba(255,255,255,0.65)",
+              color: "rgba(255,255,255,0.6)",
               fontSize: 9,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
               textShadow: "0 1px 4px rgba(0,0,0,0.5)",
-            }}>Feira de Produtores</span>
+            }}>
+              Feira de Produtores
+            </span>
           </div>
         </div>
 
-        {/* â•â• BADGE QUALIDADE (topo direito) â•â• */}
+        {/* BADGE — canto superior direito */}
         <div style={{
-          position: "absolute", top: 30, right: 30, zIndex: 20,
-          background: "rgba(0,0,0,0.35)",
-          backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255,255,255,0.2)",
+          position: "absolute", top: 28, right: 28, zIndex: 20,
+          background: "rgba(0,0,0,0.38)",
+          border: "1px solid rgba(255,255,255,0.22)",
           borderRadius: 100,
-          paddingTop: 7, paddingBottom: 7,
-          paddingLeft: 14, paddingRight: 14,
+          padding: "7px 14px",
         }}>
           <span style={{
             color: "#fff",
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.04em",
-          }}>âœ¦ Qualidade garantida</span>
+          }}>
+            Qualidade garantida
+          </span>
         </div>
 
-        {/* â•â• FOTO DO PRODUTOR (cÃ­rculo flutuante, sobrepÃµe a divisa) â•â• */}
+        {/* FOTO DO PRODUTOR — sobrepoe a divisa mosaico/info */}
         <div style={{
           position: "absolute",
           top: MOSAIC_H - HALF_CIRCLE,
@@ -197,7 +206,7 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
           height: CIRCLE,
           borderRadius: "50%",
           border: "4px solid #0b2217",
-          boxShadow: `0 0 0 3px ${accent}60, 0 8px 32px rgba(0,0,0,0.6)`,
+          boxShadow: `0 0 0 3px ${accent}55, 0 8px 32px rgba(0,0,0,0.6)`,
           overflow: "hidden",
           background: accent,
           display: "flex",
@@ -205,15 +214,14 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
           justifyContent: "center",
           zIndex: 30,
         }}>
-          {photoDataUrl ? (
+          {photoDataUrl
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photoDataUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          ) : (
-            <span style={{ color: "white", fontSize: 40, fontWeight: 700 }}>{initial}</span>
-          )}
+            ? <img src={photoDataUrl} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <span style={{ color: "white", fontSize: 42, fontWeight: 700, lineHeight: 1 }}>{initial}</span>
+          }
         </div>
 
-        {/* â•â• SEÃ‡ÃƒO DE INFORMAÃ‡Ã•ES (parte inferior dark) â•â• */}
+        {/* SECAO DE INFORMACOES — parte dark inferior */}
         <div style={{
           position: "absolute",
           top: MOSAIC_H,
@@ -222,26 +230,26 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: HALF_CIRCLE + 16,  // espaÃ§o para o cÃ­rculo sobreposto
-          paddingBottom: 30,
+          paddingTop: HALF_CIRCLE + 18,
+          paddingBottom: 28,
           paddingLeft: 36,
           paddingRight: 36,
           boxSizing: "border-box",
         }}>
 
-          {/* Tag "Agricultura Familiar" */}
+          {/* Tag Agricultura Familiar */}
           <div style={{
             color: "#4ade80",
             fontSize: 10,
             fontWeight: 700,
-            letterSpacing: "0.14em",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
             marginBottom: 10,
           }}>
-            âœ¦&nbsp;&nbsp;Agricultura Familiar&nbsp;&nbsp;âœ¦
+            — Agricultura Familiar —
           </div>
 
-          {/* Nome da banca */}
+          {/* Nome */}
           <div style={{
             color: "#ffffff",
             fontSize: 30,
@@ -257,18 +265,19 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
           {/* Cidade */}
           {city && (
             <div style={{
-              color: "rgba(255,255,255,0.45)",
+              color: "rgba(255,255,255,0.42)",
               fontSize: 12,
               marginBottom: 14,
+              letterSpacing: "0.02em",
             }}>
-              ðŸ“&nbsp;{city}
+              {city}
             </div>
           )}
 
           {/* Bio */}
           {bio && (
             <div style={{
-              color: "rgba(255,255,255,0.55)",
+              color: "rgba(255,255,255,0.52)",
               fontSize: 12,
               fontStyle: "italic",
               textAlign: "center",
@@ -284,13 +293,13 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
             </div>
           )}
 
-          {/* CÃ­rculos de produtos (apenas visual â€” sem texto, sem preÃ§o) */}
+          {/* Circulos de produtos — so fotos, sem preco/nome */}
           {productCircles.length > 0 && (
             <div style={{
               display: "flex",
               gap: productCircles.length >= 5 ? 8 : 12,
               marginBottom: 18,
-              marginTop: 4,
+              marginTop: bio ? 0 : 8,
             }}>
               {productCircles.map((p, i) => (
                 <div key={i} style={{
@@ -308,7 +317,6 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
             </div>
           )}
 
-          {/* EspaÃ§ador flexÃ­vel */}
           <div style={{ flex: 1 }} />
 
           {/* Divisor */}
@@ -319,33 +327,37 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
             marginBottom: 18,
           }} />
 
-          {/* RodapÃ©: branding Terra Viva */}
+          {/* Branding rodape */}
           <div style={{
             display: "flex",
             alignItems: "center",
-            gap: 7,
+            gap: 8,
             marginBottom: 14,
           }}>
-            <span style={{ fontSize: 15 }}>ðŸŒ±</span>
+            <div style={{
+              width: 7, height: 7,
+              borderRadius: "50%",
+              background: accent,
+              flexShrink: 0,
+            }} />
             <span style={{
-              color: "rgba(255,255,255,0.4)",
+              color: "rgba(255,255,255,0.38)",
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
             }}>
-              Terra Viva&nbsp;â€¢&nbsp;Produtos frescos do campo
+              Terra Viva — Produtos frescos do campo
             </span>
           </div>
 
           {/* URL pill */}
           <div style={{
             background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.14)",
+            border: "1px solid rgba(255,255,255,0.13)",
             borderRadius: 100,
-            paddingTop: 10, paddingBottom: 10,
-            paddingLeft: 24, paddingRight: 24,
-            color: "rgba(255,255,255,0.75)",
+            padding: "10px 24px",
+            color: "rgba(255,255,255,0.72)",
             fontSize: 11,
             fontWeight: 500,
             letterSpacing: "0.02em",
@@ -356,12 +368,12 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
 
           {/* CTA */}
           <div style={{
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(255,255,255,0.45)",
             fontSize: 11,
             marginTop: 10,
             letterSpacing: "0.02em",
           }}>
-            ðŸ›’ Acesse, conheÃ§a e faÃ§a seu pedido
+            Acesse, conhea e faca seu pedido
           </div>
         </div>
       </div>
@@ -370,4 +382,3 @@ export const BancaStoryCard = forwardRef<HTMLDivElement, BancaStoryCardProps>(
 );
 
 BancaStoryCard.displayName = "BancaStoryCard";
-
