@@ -26,13 +26,12 @@ interface Props {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
 /**
- * Converte URL de imagem para dataURL via proxy backend.
- * Resolve CORS com imagens do DO Spaces.
+ * Converte URL para dataURL via proxy backend (resolve CORS com DO Spaces).
  */
 async function toDataUrl(url: string): Promise<string | null> {
   try {
     const proxyUrl = `${API_BASE}/producer/image-proxy?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, { credentials: "include" });
+    const res = await fetch(proxyUrl);
     if (!res.ok) return null;
     const blob = await res.blob();
     return new Promise((resolve) => {
@@ -44,6 +43,24 @@ async function toDataUrl(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Aguarda todas as <img> dentro de um elemento terminarem de carregar/decodificar.
+ */
+async function waitForImages(el: HTMLElement): Promise<void> {
+  const imgs = Array.from(el.querySelectorAll("img")) as HTMLImageElement[];
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        img.complete && img.naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            })
+    )
+  );
 }
 
 export function ShareBancaModal({
@@ -72,7 +89,7 @@ export function ShareBancaModal({
       ? `${window.location.origin}/banca/${shortCode}`
       : `https://terra-viva-3n3ko.ondigitalocean.app/banca/${shortCode}`;
 
-  const whatsappText = `Ola! Confira os produtos da nossa banca na feira Terra Viva!\n👉 ${bancaUrl}`;
+  const whatsappText = `Ola! Confira os produtos da nossa banca na feira Terra Viva!\n${bancaUrl}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
   useEffect(() => {
@@ -112,14 +129,19 @@ export function ShareBancaModal({
   useEffect(() => {
     if (!captureReady || !cardRef.current) return;
 
+    // Aguarda React commitar o re-render com as dataURLs
     const timer = setTimeout(async () => {
+      if (!cardRef.current) return;
       try {
+        // Aguarda todas as imagens decodificarem antes de capturar
+        await waitForImages(cardRef.current);
+
         const { toPng } = await import("html-to-image");
-        const dataUrl = await toPng(cardRef.current!, {
+        const dataUrl = await toPng(cardRef.current, {
           width: 540,
           height: 960,
           pixelRatio: 2,
-          cacheBust: true,
+          cacheBust: false,
         });
 
         const fetchRes = await fetch(dataUrl);
@@ -134,7 +156,7 @@ export function ShareBancaModal({
         ) {
           await navigator.share({
             files: [file],
-            title: `${name} — Terra Viva`,
+            title: `${name} - Terra Viva`,
             text: `Conheca a banca de ${name} na feira Terra Viva!`,
           });
           onClose();
@@ -146,12 +168,12 @@ export function ShareBancaModal({
           setDesktopDownloaded(true);
         }
       } catch (err) {
-        console.warn("Share cancelled or failed:", err);
+        console.warn("Share failed:", err);
       } finally {
         setGenerating(false);
         setCaptureReady(false);
       }
-    }, 150);
+    }, 300);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,28 +189,42 @@ export function ShareBancaModal({
   }));
 
   const modal = (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ alignItems: "center" }}
+    >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Bottom sheet com scroll e altura maxima */}
+      {/* Dialog centralizado */}
       <div
-        className="relative w-full max-w-md rounded-t-3xl bg-white shadow-2xl"
-        style={{ maxHeight: "88dvh", display: "flex", flexDirection: "column" }}
+        className="relative w-full max-w-sm rounded-3xl bg-white shadow-2xl"
+        style={{ maxHeight: "90dvh", display: "flex", flexDirection: "column" }}
       >
-        {/* Handle fixo */}
-        <div className="px-5 pt-4 pb-2 flex-shrink-0">
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-200" />
-          <h3 className="mb-0.5 text-center text-lg font-bold text-textPrimary">
-            Divulgar minha banca
-          </h3>
-          <p className="mb-4 text-center text-sm text-textSecondary">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 flex-shrink-0 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-textPrimary">Divulgar minha banca</h3>
+          <p className="mt-1 text-sm text-textSecondary">
             Compartilhe e leve mais clientes a sua banca
           </p>
+          {/* Fechar */}
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
 
-        {/* Conteudo com scroll */}
-        <div className="overflow-y-auto px-5 pb-8 flex-1">
+        {/* Conteudo */}
+        <div className="overflow-y-auto px-6 pb-6 flex-1">
           <div className="space-y-3">
             {/* WhatsApp */}
             <a
@@ -196,18 +232,18 @@ export function ShareBancaModal({
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}
-              className="flex items-center gap-4 rounded-2xl border border-green-100 bg-green-50 px-4 py-3.5 transition hover:bg-green-100 active:scale-95"
+              className="flex items-center gap-4 rounded-2xl border border-green-100 bg-green-50 px-4 py-4 transition hover:bg-green-100 active:scale-95"
             >
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#25d366] shadow-sm">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#25d366] shadow-sm">
                 <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                 </svg>
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-textPrimary">WhatsApp</p>
                 <p className="text-xs text-textSecondary">Enviar link da banca com texto</p>
               </div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="ml-auto h-4 w-4 text-textSecondary" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-textSecondary" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
             </a>
@@ -216,9 +252,9 @@ export function ShareBancaModal({
             <button
               onClick={handleGenerateStory}
               disabled={generating}
-              className="flex w-full items-center gap-4 rounded-2xl border border-purple-100 bg-purple-50 px-4 py-3.5 text-left transition hover:bg-purple-100 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+              className="flex w-full items-center gap-4 rounded-2xl border border-purple-100 bg-purple-50 px-4 py-4 text-left transition hover:bg-purple-100 active:scale-95 disabled:cursor-wait disabled:opacity-70"
             >
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] shadow-sm">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] shadow-sm">
                 {generating ? (
                   <svg className="h-5 w-5 animate-spin text-white" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -230,16 +266,16 @@ export function ShareBancaModal({
                   </svg>
                 )}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-textPrimary">
                   {generating ? "Gerando cartaz..." : "Cartaz para Story"}
                 </p>
-                <p className="text-xs text-textSecondary">
-                  {generating ? "Buscando fotos e gerando imagem..." : "Instagram, Facebook, TikTok e mais"}
+                <p className="text-xs text-textSecondary truncate">
+                  {generating ? "Baixando fotos e gerando imagem..." : "Instagram, Facebook, TikTok e mais"}
                 </p>
               </div>
               {!generating && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="ml-auto h-4 w-4 text-textSecondary" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0 text-textSecondary" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
               )}
@@ -247,7 +283,7 @@ export function ShareBancaModal({
 
             {desktopDownloaded && (
               <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-                ✅ <strong>Cartaz baixado!</strong> Abra o Instagram no celular,
+                <strong>Cartaz baixado!</strong> Abra o Instagram no celular,
                 va em <strong>Adicionar Story</strong> e escolha a imagem salva.
               </div>
             )}
@@ -255,10 +291,22 @@ export function ShareBancaModal({
         </div>
       </div>
 
-      {/* Card off-screen para captura pelo html-to-image */}
+      {/*
+        Card off-screen para captura pelo html-to-image.
+        IMPORTANTE: position absolute (nao fixed), sem z-index negativo
+        para garantir que o browser renderize (pinte) as imagens.
+      */}
       <div
         aria-hidden
-        style={{ position: "fixed", left: -9999, top: -9999, pointerEvents: "none", zIndex: -1 }}
+        style={{
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
+          width: "540px",
+          height: "960px",
+          overflow: "hidden",
+          pointerEvents: "none",
+        }}
       >
         <BancaStoryCard
           ref={cardRef}
