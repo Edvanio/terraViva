@@ -47,7 +47,21 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
           {/* Share button - canto superior direito */}
           {banca.short_code && (
             <div className="absolute top-3 right-3 z-10">
-              <ShareButton name={displayName} shortCode={banca.short_code} className="bg-white/90 border-white/50 shadow-md backdrop-blur-sm" />
+              <ShareButton
+                name={displayName}
+                shortCode={banca.short_code}
+                className="bg-white/90 border-white/50 shadow-md backdrop-blur-sm"
+                storyData={{
+                  city: banca.city,
+                  bio: banca.bio,
+                  photoUrl: banca.photo_url,
+                  colorPrimary: (banca as { color_primary?: string | null }).color_primary,
+                  products: (banca.products || [])
+                    .filter((p) => p.is_active)
+                    .slice(0, 6)
+                    .map((p) => ({ name: p.name, price: p.price, photoUrl: p.photo_url })),
+                }}
+              />
             </div>
           )}
           <div className="absolute bottom-0 left-6 translate-y-1/2">
