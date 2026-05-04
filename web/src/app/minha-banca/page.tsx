@@ -82,6 +82,7 @@ export default function MinhaBancaPage() {
   const [producerCity, setProducerCity] = useState<string>("");
   const [producerName, setProducerName] = useState<string>("");
   const [producerPhotoUrl, setProducerPhotoUrl] = useState<string | null>(null);
+  const [producerCoverUrl, setProducerCoverUrl] = useState<string | null>(null);
   const [producerBio, setProducerBio] = useState<string | null>(null);
   const [producerColorPrimary, setProducerColorPrimary] = useState<string | null>(null);
   const [bancaShortCode, setBancaShortCode] = useState<string | null>(null);
@@ -145,6 +146,7 @@ export default function MinhaBancaPage() {
       setProducerCity(profile.city || "");
       setProducerName(profile.name || "");
       setProducerPhotoUrl(profile.photo_url ?? null);
+      setProducerCoverUrl(profile.cover_url ?? null);
       setProducerBio(profile.bio ?? null);
       setProducerColorPrimary(profile.color_primary ?? null);
       setBancaShortCode(profile.short_code ?? null);
@@ -317,6 +319,7 @@ export default function MinhaBancaPage() {
                 city: producerCity,
                 bio: producerBio,
                 photoUrl: producerPhotoUrl,
+                coverUrl: producerCoverUrl,
                 colorPrimary: producerColorPrimary,
                 products: products
                   .filter((p) => p.is_active)

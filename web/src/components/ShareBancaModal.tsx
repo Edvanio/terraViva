@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -18,13 +18,21 @@ interface Props {
   city?: string | null;
   bio?: string | null;
   photoUrl?: string | null;
+  coverUrl?: string | null;
   colorPrimary?: string | null;
   products?: ShareProduct[];
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+
+/**
+ * Converte uma URL de imagem para dataURL usando o proxy do backend.
+ * Evita erros de CORS com imagens do DO Spaces.
+ */
 async function toDataUrl(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { mode: "cors", cache: "no-cache" });
+    const proxyUrl = `${API_BASE}/producer/image-proxy?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl, { credentials: "include" });
     if (!res.ok) return null;
     const blob = await res.blob();
     return new Promise((resolve) => {
@@ -46,6 +54,7 @@ export function ShareBancaModal({
   city,
   bio,
   photoUrl,
+  coverUrl,
   colorPrimary,
   products = [],
 }: Props) {
@@ -53,8 +62,9 @@ export function ShareBancaModal({
   const [generating, setGenerating] = useState(false);
   const [desktopDownloaded, setDesktopDownloaded] = useState(false);
 
-  // Data URLs resolvidos para o cartaz
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  // Data URLs para o cartaz
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
+  const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
   const [productDataUrls, setProductDataUrls] = useState<(string | null)[]>([]);
   const [captureReady, setCaptureReady] = useState(false);
 
@@ -63,7 +73,7 @@ export function ShareBancaModal({
       ? `${window.location.origin}/banca/${shortCode}`
       : `https://terra-viva-3n3ko.ondigitalocean.app/banca/${shortCode}`;
 
-  const whatsappText = `Olá! 🌱 Confira os produtos da nossa banca na feira Terra Viva!\n👉 ${bancaUrl}`;
+  const whatsappText = `OlÃ¡! ðŸŒ± Confira os produtos da nossa banca na feira Terra Viva!\nðŸ‘‰ ${bancaUrl}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
   // Reset ao fechar
@@ -71,7 +81,8 @@ export function ShareBancaModal({
     if (!isOpen) {
       setGenerating(false);
       setDesktopDownloaded(false);
-      setPhotoDataUrl(null);
+      setAvatarDataUrl(null);
+      setCoverDataUrl(null);
       setProductDataUrls([]);
       setCaptureReady(false);
     }
@@ -83,13 +94,17 @@ export function ShareBancaModal({
     setDesktopDownloaded(false);
 
     try {
-      const [photo, ...prods] = await Promise.all([
+      // Busca avatar, capa e fotos de produtos em paralelo via proxy (resolve CORS)
+      const [avatar, cover, ...prods] = await Promise.all([
         photoUrl ? toDataUrl(photoUrl) : Promise.resolve(null),
+        coverUrl ? toDataUrl(coverUrl) : Promise.resolve(null),
         ...products.slice(0, 6).map((p) =>
           p.photoUrl ? toDataUrl(p.photoUrl) : Promise.resolve(null)
         ),
       ]);
-      setPhotoDataUrl(photo);
+
+      setAvatarDataUrl(avatar);
+      setCoverDataUrl(cover);
       setProductDataUrls(prods);
       setCaptureReady(true);
     } catch {
@@ -97,7 +112,7 @@ export function ShareBancaModal({
     }
   }
 
-  // Quando as data URLs estão prontas e o card renderizou, capturar
+  // Quando as data URLs estÃ£o prontas e o card renderizou, capturar
   useEffect(() => {
     if (!captureReady || !cardRef.current) return;
 
@@ -124,12 +139,12 @@ export function ShareBancaModal({
         ) {
           await navigator.share({
             files: [file],
-            title: `${name} — Terra Viva`,
-            text: `Conheça a banca de ${name} na feira Terra Viva! 🌱`,
+            title: `${name} â€” Terra Viva`,
+            text: `ConheÃ§a a banca de ${name} na feira Terra Viva! ðŸŒ±`,
           });
           onClose();
         } else {
-          // Desktop: download automático
+          // Desktop: download automÃ¡tico
           const link = document.createElement("a");
           link.href = dataUrl;
           link.download = `${safeName}-terra-viva.png`;
@@ -137,21 +152,24 @@ export function ShareBancaModal({
           setDesktopDownloaded(true);
         }
       } catch (err) {
-        // Usuário cancelou o share ou erro — não bloquear
         console.warn("Share cancelled or failed:", err);
       } finally {
         setGenerating(false);
         setCaptureReady(false);
       }
-    }, 120); // aguarda o React re-renderizar o BancaStoryCard
+    }, 150); // aguarda React re-renderizar o BancaStoryCard com as data URLs
 
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [captureReady]);
 
   if (!isOpen) return null;
 
-  const displayProducts = products.slice(0, 6).map((p, i) => ({
+  // Mosaico: [capa, ...fotos de produto]
+  const mosaicPhotos: (string | null)[] = [coverDataUrl, ...productDataUrls];
+
+  // Produtos para o card (mantÃ©m photoDataUrl para os cÃ­rculos decorativos)
+  const displayProducts = products.slice(0, 5).map((p, i) => ({
     name: p.name,
     price: p.price,
     photoDataUrl: productDataUrls[i] ?? null,
@@ -174,11 +192,11 @@ export function ShareBancaModal({
           Divulgar minha banca
         </h3>
         <p className="mb-5 text-center text-sm text-textSecondary">
-          Compartilhe seus produtos e leve mais clientes à sua banca 🌱
+          Compartilhe seus produtos e leve mais clientes Ã  sua banca ðŸŒ±
         </p>
 
         <div className="space-y-3">
-          {/* ── WhatsApp ── */}
+          {/* â”€â”€ WhatsApp â”€â”€ */}
           <a
             href={whatsappUrl}
             target="_blank"
@@ -209,7 +227,7 @@ export function ShareBancaModal({
             </svg>
           </a>
 
-          {/* ── Cartaz para Story ── */}
+          {/* â”€â”€ Cartaz para Story â”€â”€ */}
           <button
             onClick={handleGenerateStory}
             disabled={generating}
@@ -248,7 +266,7 @@ export function ShareBancaModal({
               </p>
               <p className="text-xs text-textSecondary">
                 {generating
-                  ? "Aguarde um momento..."
+                  ? "Buscando fotos e gerando imagem..."
                   : "Instagram, Facebook, TikTok e mais"}
               </p>
             </div>
@@ -268,29 +286,30 @@ export function ShareBancaModal({
             )}
           </button>
 
-          {/* Instrução desktop pós-download */}
+          {/* InstruÃ§Ã£o desktop pÃ³s-download */}
           {desktopDownloaded && (
             <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-              ✅ <strong>Cartaz baixado!</strong> Abra o Instagram ou Facebook no seu celular,
-              vá em <strong>Adicionar Story</strong> e escolha a imagem salva.
+              âœ… <strong>Cartaz baixado!</strong> Abra o Instagram ou Facebook no seu celular,
+              vÃ¡ em <strong>Adicionar Story</strong> e escolha a imagem salva.
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Card off-screen para captura ── */}
+      {/* â”€â”€ Card off-screen para captura pelo html-to-image â”€â”€ */}
       <div
         aria-hidden
-        style={{ position: "fixed", left: -9999, top: -9999, pointerEvents: "none" }}
+        style={{ position: "fixed", left: -9999, top: -9999, pointerEvents: "none", zIndex: -1 }}
       >
         <BancaStoryCard
           ref={cardRef}
           name={name}
           city={city}
           bio={bio}
-          photoDataUrl={photoDataUrl}
+          photoDataUrl={avatarDataUrl}
           colorPrimary={colorPrimary}
           products={displayProducts}
+          mosaicPhotos={mosaicPhotos}
           bancaUrl={bancaUrl}
         />
       </div>

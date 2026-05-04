@@ -55,6 +55,7 @@ export default async function BancaPage({ params }: { params: Promise<{ id: stri
                   city: banca.city,
                   bio: banca.bio,
                   photoUrl: banca.photo_url,
+                  coverUrl: banca.cover_url,
                   colorPrimary: (banca as { color_primary?: string | null }).color_primary,
                   products: (banca.products || [])
                     .filter((p) => p.is_active)

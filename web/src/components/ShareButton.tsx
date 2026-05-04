@@ -7,6 +7,7 @@ export interface ShareStoryData {
   city?: string | null;
   bio?: string | null;
   photoUrl?: string | null;
+  coverUrl?: string | null;
   colorPrimary?: string | null;
   products?: ShareProduct[];
 }
@@ -84,6 +85,7 @@ export function ShareButton({ name, shortCode, className = "", storyData }: Prop
           city={storyData.city}
           bio={storyData.bio}
           photoUrl={storyData.photoUrl}
+          coverUrl={storyData.coverUrl}
           colorPrimary={storyData.colorPrimary}
           products={storyData.products}
         />
